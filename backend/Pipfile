@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "*"
+djangorestframework = "*"
+django-cors-headers = "*"
+djangorestframework-simplejwt = "*"
+psycopg2 = "*"
+nltk = "*"
+pandas = "*"
+python-dotenv = "*"
+scikit-learn = "==0.24.2"
+tweepy = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
