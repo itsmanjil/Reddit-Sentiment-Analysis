@@ -266,7 +266,7 @@ function Homepage() {
                 <span class="fa-stack">
                   <a href="#your-link">
                     <i class="fas fa-circle fa-stack-2x"></i>
-                    <i class="fab fa-twitter fa-stack-1x"></i>
+                    <i class="fab fa-reddit fa-stack-1x"></i>
                   </a>
                 </span>
                 <span class="fa-stack">

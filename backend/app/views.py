@@ -16,7 +16,7 @@ load_dotenv()
 import numpy as np
 import pandas as pd
 import nltk
-import tweepy as tw
+import praw
 import requests
 
 from django.http import JsonResponse
@@ -150,69 +150,48 @@ def remove_stopwords(text):
 
 
 # -----------------------------
-# Twitter fetch (real-time)
+# Reddit fetch (real-time)
 # -----------------------------
-def fetch_tweets(product, company, keywords):
+def fetch_posts(product, company, keywords):
     """
-    Fetch up to 100 tweets using Twitter API v2.
-    Uses Bearer token (OAuth 2.0) authentication.
+    Fetch up to 100 posts/comments from Reddit using PRAW.
+    Free tier with generous limits.
     """
     try:
         # Get credentials from environment
-        api_key = os.getenv("TWITTER_API_KEY")
-        api_secret = os.getenv("TWITTER_API_SECRET")
-        access_token = os.getenv("TWITTER_ACCESS_TOKEN")
-        access_token_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+        client_id = os.getenv("REDDIT_CLIENT_ID")
+        client_secret = os.getenv("REDDIT_CLIENT_SECRET")
+        user_agent = os.getenv("REDDIT_USER_AGENT", "SentimentAnalysis/1.0")
 
         missing = [k for k, v in {
-            "TWITTER_API_KEY": api_key,
-            "TWITTER_API_SECRET": api_secret,
-            "TWITTER_ACCESS_TOKEN": access_token,
-            "TWITTER_ACCESS_TOKEN_SECRET": access_token_secret,
+            "REDDIT_CLIENT_ID": client_id,
+            "REDDIT_CLIENT_SECRET": client_secret,
         }.items() if not v]
 
         if missing:
-            raise RuntimeError(f"Missing Twitter credentials in backend/.env: {missing}")
+            raise RuntimeError(f"Missing Reddit credentials in backend/.env: {missing}")
 
-        # Use OAuth 2.0 with User Context (requires elevated access)
-        auth = tw.OAuth2UserHandler(
-            client_id=api_key,
-            client_secret=api_secret,
-            redirect_uri="http://localhost",
-            scope=["tweet.read"]
-        )
-        
-        # Alternative: Use OAuth 1.0a User Context
-        client = tw.Client(
-            consumer_key=api_key,
-            consumer_secret=api_secret,
-            access_token=access_token,
-            access_token_secret=access_token_secret,
-            wait_on_rate_limit=True
+        # Initialize Reddit instance
+        reddit = praw.Reddit(
+            client_id=client_id,
+            client_secret=client_secret,
+            user_agent=user_agent,
         )
 
         # Build search query
-        query = (
-            f"({product} OR {keywords} OR {company}) "
-            f"-is:retweet -is:reply lang:en"
-        )
-        print(f"Search query: {query}")
+        query = f"{product} {company} {keywords}"
+        print(f"Reddit search query: {query}")
 
-        # Fetch tweets using API v2
-        tweets_response = client.search_recent_tweets(
-            query=query,
-            max_results=100,
-            tweet_fields=['created_at', 'author_id'],
-        )
+        # Fetch posts from Reddit (search across all subreddits)
+        all_posts = []
 
-        if not tweets_response.data:
-            return []
-
-        all_tweets = []
-        for tweet in tweets_response.data:
-            created_at = tweet.created_at
-            all_tweets.append([
-                tweet.text,
+        # Search for submissions
+        for submission in reddit.subreddit("all").search(query, limit=50, time_filter="week"):
+            created_at = datetime.datetime.fromtimestamp(submission.created_utc)
+            # Combine title and selftext for better sentiment analysis
+            text = f"{submission.title} {submission.selftext}"
+            all_posts.append([
+                text,
                 created_at.year,
                 created_at.month,
                 created_at.day,
@@ -221,32 +200,56 @@ def fetch_tweets(product, company, keywords):
                 created_at.second,
             ])
 
+            # Also get top comments from each submission
+            submission.comments.replace_more(limit=0)
+            for comment in submission.comments[:5]:  # Top 5 comments per post
+                if hasattr(comment, 'body') and len(comment.body) > 10:
+                    comment_time = datetime.datetime.fromtimestamp(comment.created_utc)
+                    all_posts.append([
+                        comment.body,
+                        comment_time.year,
+                        comment_time.month,
+                        comment_time.day,
+                        comment_time.hour,
+                        comment_time.minute,
+                        comment_time.second,
+                    ])
+
+                    if len(all_posts) >= 100:
+                        break
+
+            if len(all_posts) >= 100:
+                break
+
+        if not all_posts:
+            return []
+
         pd.set_option("display.max_colwidth", None)
-        tweet_text = pd.DataFrame(
-            data=all_tweets,
+        post_text = pd.DataFrame(
+            data=all_posts,
             columns=["tweet", "year", "month", "day", "hour", "minute", "second"],
         )
 
         # Pre-processing pipeline
-        tweet_text["tweet"] = tweet_text["tweet"].apply(lower_case)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(remove_multiple)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(remove_single_char)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(remove_special_characters)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(remove_square_brackets)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(remove_urls)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(remove_username)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(replace_contractions)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(replace_negation)
-        tweet_text["tweet"] = tweet_text["tweet"].apply(remove_stopwords)
+        post_text["tweet"] = post_text["tweet"].apply(lower_case)
+        post_text["tweet"] = post_text["tweet"].apply(remove_multiple)
+        post_text["tweet"] = post_text["tweet"].apply(remove_single_char)
+        post_text["tweet"] = post_text["tweet"].apply(remove_special_characters)
+        post_text["tweet"] = post_text["tweet"].apply(remove_square_brackets)
+        post_text["tweet"] = post_text["tweet"].apply(remove_urls)
+        post_text["tweet"] = post_text["tweet"].apply(remove_username)
+        post_text["tweet"] = post_text["tweet"].apply(replace_contractions)
+        post_text["tweet"] = post_text["tweet"].apply(replace_negation)
+        post_text["tweet"] = post_text["tweet"].apply(remove_stopwords)
 
-        return tweet_text
+        return post_text
 
-    except tw.TooManyRequests as e:
-        print(f"Rate limited: {e}")
-        raise RuntimeError("Twitter API rate limit exceeded. Please try again later.")
+    except praw.exceptions.APIException as e:
+        print(f"Reddit API error: {e}")
+        raise RuntimeError(f"Reddit API error: {str(e)}")
 
     except Exception as e:
-        print(f"Error fetching tweets: {e}")
+        print(f"Error fetching Reddit posts: {e}")
         raise
 
 
@@ -295,19 +298,19 @@ def search_keywords(request):
 
     product_name = data["product_name"]
 
-    # Fetch real-time cleaned tweets
+    # Fetch real-time posts from Reddit
     try:
-        cleaned_tweets = fetch_tweets(data["product_name"], data["company_name"], data["keywords"])
+        cleaned_tweets = fetch_posts(data["product_name"], data["company_name"], data["keywords"])
     except Exception as e:
-        # Twitter/auth/config errors should be surfaced clearly
+        # Reddit/auth/config errors should be surfaced clearly
         return Response(
-            {"msg": f"Twitter fetch failed: {str(e)}"},
+            {"msg": f"Reddit fetch failed: {str(e)}"},
             status=502
         )
 
     if len(cleaned_tweets) == 0:
         return Response(
-            {"msg": "No tweets found for these keywords. Try different keywords."},
+            {"msg": "No posts found for these keywords. Try different keywords."},
             status=404
         )
 

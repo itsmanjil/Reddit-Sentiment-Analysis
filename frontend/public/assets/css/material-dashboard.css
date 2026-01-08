@@ -15613,30 +15613,6 @@ hr.horizontal {
     .btn.btn-facebook.btn-neutral:hover, .btn.btn-facebook.btn-neutral:focus, .btn.btn-facebook.btn-neutral:active {
       color: #344e86; }
 
-.btn.btn-twitter {
-  background-color: #55acee;
-  color: #fff; }
-  .btn.btn-twitter:focus, .btn.btn-twitter:hover {
-    background-color: #3ea1ec;
-    color: #fff; }
-  .btn.btn-twitter:active, .btn.btn-twitter:focus, .btn.btn-twitter:active:focus {
-    box-shadow: none; }
-  .btn.btn-twitter.btn-simple {
-    color: #3ea1ec;
-    background-color: transparent;
-    background-image: none !important;
-    box-shadow: none;
-    border: none; }
-    .btn.btn-twitter.btn-simple:hover, .btn.btn-twitter.btn-simple:focus, .btn.btn-twitter.btn-simple:hover:focus, .btn.btn-twitter.btn-simple:active, .btn.btn-twitter.btn-simple:hover:focus:active {
-      color: #3ea1ec;
-      background: transparent !important;
-      box-shadow: none !important; }
-  .btn.btn-twitter.btn-neutral {
-    color: #55acee;
-    background-color: #fff; }
-    .btn.btn-twitter.btn-neutral:hover, .btn.btn-twitter.btn-neutral:focus, .btn.btn-twitter.btn-neutral:active {
-      color: #3ea1ec; }
-
 .btn.btn-pinterest {
   background-color: #cc2127;
   color: #fff; }

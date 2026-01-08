@@ -26,7 +26,7 @@ function Fixedplugins() {
                 <div>
                 <h6 className ="mb-0">Sidebar Colors</h6>
                 </div>
-                <a href="javascript:void(0)" className ="switch-trigger background-color">
+                <button type="button" className ="switch-trigger background-color" style={{background: 'none', border: 'none', padding: 0, cursor: 'pointer'}}>
                 <div className ="badge-colors my-2 text-start">
                 <span className ="badge filter bg-gradient-primary active" data-color="primary" onclick="sidebarColor(this)"></span>
                 <span className ="badge filter bg-gradient-dark" data-color="dark" onclick="sidebarColor(this)"></span>
@@ -35,7 +35,7 @@ function Fixedplugins() {
                 <span className ="badge filter bg-gradient-warning" data-color="warning" onclick="sidebarColor(this)"></span>
                 <span className ="badge filter bg-gradient-danger" data-color="danger" onclick="sidebarColor(this)"></span>
                 </div>
-                </a>
+                </button>
                 {/* <!--Sidenav Type--> */}
                 <div className ="mt-3">
                 <h6 className ="mb-0">Sidenav Type</h6>
@@ -62,14 +62,14 @@ function Fixedplugins() {
                 </div>
                 </div>
                 <hr className ="horizontal dark my-sm-4" />
-                <a className ="btn btn-outline-dark w-100" href="">View documentation</a>
+                <a className ="btn btn-outline-dark w-100" href="#documentation">View documentation</a>
                 <div className ="w-100 text-center">
                 <a className ="github-button" href="https://github.com/creativetimofficial/material-dashboard" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star creativetimofficial/material-dashboard on GitHub">Star</a>
                 <h6 className ="mt-3">Thank you for sharing!</h6>
-                <a href="https://twitter.com/intent/tweet?text=Check%20Material%20UI%20Dashboard%20made%20by%20%40CreativeTim%20%23webdesign%20%23dashboard%20%23bootstrap5&amp;url=https%3A%2F%2Fwww.creative-tim.com%2Fproduct%2Fsoft-ui-dashboard" className ="btn btn-dark mb-0 me-2" target="_blank">
-                <i className ="fab fa-twitter me-1" aria-hidden="true"></i> Tweet
+                <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fwww.creative-tim.com%2Fproduct%2Fmaterial-dashboard&title=Check%20Material%20UI%20Dashboard" className ="btn btn-dark mb-0 me-2" target="_blank" rel="noreferrer">
+                <i className ="fab fa-reddit me-1" aria-hidden="true"></i> Share on Reddit
                 </a>
-                <a href="https://www.facebook.com/sharer/sharer.php?u=https://www.creative-tim.com/product/material-dashboard" className ="btn btn-dark mb-0 me-2" target="_blank">
+                <a href="https://www.facebook.com/sharer/sharer.php?u=https://www.creative-tim.com/product/material-dashboard" className ="btn btn-dark mb-0 me-2" target="_blank" rel="noreferrer">
                 <i className ="fab fa-facebook-square me-1" aria-hidden="true"></i> Share
                 </a>
                 </div>

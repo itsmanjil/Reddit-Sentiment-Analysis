@@ -1,11 +1,7 @@
-import React, { useContext, useEffect, useState } from "react";
-import ReactDOM from "react-dom";
-import { useNavigate, useLocation } from "react-router-dom";
-import Navbar from "../../Components/Navbar";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import Sidenavbar from "../../Components/Sidenavbar";
 import Fixedplugins from "../../Components/Fixedplugins";
 import { Link } from "react-router-dom";
-import axiosInstance from "../../axios";
 import jwt_decode from "jwt-decode";
 import axios from "axios";
 import AuthContext from "../../context/AuthContext";
@@ -16,7 +12,7 @@ function Profile(props) {
   const { authToken } = useContext(AuthContext);
   const [user, setUser] = useState({});
   const [searchedList, setSearchedList] = useState([]);
-  const getData = async () => {
+  const getData = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       const { user_id } = jwt_decode(token);
@@ -43,7 +39,7 @@ function Profile(props) {
             email: userData.data.email,
           });
           setSearchedList(userData.data.searched_list);
-          console.log("user", user, userData);
+          console.log("user", userData);
         } catch (e) {
           console.log(e);
         }
@@ -51,10 +47,10 @@ function Profile(props) {
     } catch (err) {
       console.log(err.message);
     }
-  };
+  }, [authToken]);
   useEffect(() => {
     getData();
-  }, []);
+  }, [getData]);
   return (
     <>
       <Sidenavbar />
@@ -96,26 +92,26 @@ function Profile(props) {
               </div>
               <ul class="navbar-nav  justify-content-end">
                 <li class="nav-item d-flex align-items-center">
-                  <a
-                    href="javascript:;"
+                  <span
                     class="nav-link text-body font-weight-bold px-0"
                   >
                     <i class="fa fa-user me-sm-1"></i>
                     <span class="d-sm-inline d-none">{user.user_name}</span>
-                  </a>
+                  </span>
                 </li>
                 <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
-                  <a
-                    href="javascript:;"
+                  <button
+                    type="button"
                     class="nav-link text-body p-0"
                     id="iconNavbarSidenav"
+                    style={{background: 'none', border: 'none', cursor: 'pointer'}}
                   >
                     <div class="sidenav-toggler-inner">
                       <i class="sidenav-toggler-line"></i>
                       <i class="sidenav-toggler-line"></i>
                       <i class="sidenav-toggler-line"></i>
                     </div>
-                  </a>
+                  </button>
                 </li>
                 {/*<li class="nav-item px-3 d-flex align-items-center">
                   <a href="javascript:;" class="nav-link text-body p-0">
@@ -329,10 +325,10 @@ function Profile(props) {
                             <i class="fab fa-facebook fa-lg"></i>
                           </a>
                           <a
-                            class="btn btn-twitter btn-simple mb-0 ps-1 pe-2 py-0"
-                            href="www.twitter.com"
+                            class="btn btn-reddit btn-simple mb-0 ps-1 pe-2 py-0"
+                            href="www.reddit.com"
                           >
-                            <i class="fab fa-twitter fa-lg"></i>
+                            <i class="fab fa-reddit fa-lg"></i>
                           </a>
                           <a
                             class="btn btn-instagram btn-simple mb-0 ps-1 pe-2 py-0"
