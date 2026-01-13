@@ -105,13 +105,6 @@ const RegisterForm = () => {
     setFormErrors(errorForm);
     // console.log("validated front end");
     setIsSubmit(true);
-    // console.log(
-    //   "is submit",
-    //   isSubmit,
-    //   formErrors,
-    //   Object.keys(formErrors).length,
-    //   formErrors.length
-    // );
     if (Object.keys(errorForm).length === 0) {
       console.log("can check in db..");
       console.log(formErrors);
@@ -128,25 +121,25 @@ const RegisterForm = () => {
 
   return (
     <>
-      <div class="ex-form-1 pt-5 pb-5">
-        <div class="container">
-          <div class="row">
-            <div class="col-xl-6 offset-xl-3">
-              <div class="text-box mt-5 mb-5">
-                <p class="mb-4">
+      <div className="ex-form-1 pt-5 pb-5">
+        <div className="container">
+          <div className="row">
+            <div className="col-xl-6 offset-xl-3">
+              <div className="text-box mt-5 mb-5">
+                <p className="mb-4">
                   Fill out the form below to sign up for the service. Already
                   signed up? Then just{" "}
                   <Link to="/signin">
-                    <span style={{ color: "#6168ff" }}>Sign in</span>
+                    <span style={{ color: "#ff0000" }}>Sign in</span>
                   </Link>
                 </p>
                 <form role="form">
-                  <div class="input-group input-group-outline mb-3">
-                    {/* <label class="form-label">Name</label> */}
+                  <div className="input-group input-group-outline mb-3">
+                    {/* <label className="form-label">Name</label> */}
                     <input
                       type="text"
                       placeholder="Name"
-                      class="form-control"
+                      className="form-control"
                       name="user_name"
                       value={user_name}
                       onChange={inputHanlder}
@@ -154,12 +147,12 @@ const RegisterForm = () => {
                   </div>
                   <p style={{ color: "red" }}>{formErrors.user_name}</p>
                   <p style={{ color: "red" }}>{usernameError.error}</p>
-                  <div class="input-group input-group-outline mb-3">
-                    {/* <label class="form-label">Email</label> */}
+                  <div className="input-group input-group-outline mb-3">
+                    {/* <label className="form-label">Email</label> */}
                     <input
                       type="email"
                       placeholder="Email"
-                      class="form-control"
+                      className="form-control"
                       name="email"
                       value={email}
                       onChange={inputHanlder}
@@ -167,50 +160,33 @@ const RegisterForm = () => {
                   </div>
                   <p style={{ color: "red" }}>{formErrors.email}</p>
                   <p style={{ color: "red" }}>{emailError.error}</p>
-                  <div class="input-group input-group-outline mb-3">
+                  <div className="input-group input-group-outline mb-3">
                     <input
                       type="password"
                       placeholder="Password"
-                      class="form-control"
+                      className="form-control"
                       name="password"
                       value={password}
                       onChange={inputHanlder}
                     />
                   </div>
                   <p style={{ color: "red" }}>{formErrors.password}</p>
-                  <div class="input-group input-group-outline mb-3">
+                  <div className="input-group input-group-outline mb-3">
                     <input
                       type="password"
                       placeholder="Confirm Password"
-                      class="form-control"
+                      className="form-control"
                       name="password2"
                       value={password2}
                       onChange={inputHanlder}
                     />
                   </div>
                   <p style={{ color: "red" }}>{formErrors.password2}</p>
-                  {/* <div class="form-check form-check-info text-start ps-0">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      value=""
-                      id="flexCheckDefault"
-                      // checked
-                    />
-                    <label class="form-check-label" for="flexCheckDefault">
-                      I agree the{" "}
-                      <a
-                        href="javascript:;"
-                        class="text-dark font-weight-bolder"
-                      >
-                        Terms and Conditions
-                      </a>
-                    </label>
-                  </div> */}
-                  <div class="text-center">
+                  
+                  <div className="text-center">
                     <button
                       type="submit"
-                      class="p-2 mb-2 bg-primary text-white w-100 my-4 mb-2"
+                      className="p-2 mb-2 bg-primary text-white w-100 my-4 mb-2"
                       onClick={submitHandler}>
                       Sign Up
                     </button>

@@ -29,7 +29,7 @@ function Sidenavbar() {
             alt="main_logo"
           />
           <span className="ms-1 font-weight-bold text-white">
-            Gadget Reviews
+            YouTube Sentiment Analysis
           </span>
         </Link>
       </div>
@@ -54,33 +54,24 @@ function Sidenavbar() {
               <span className="nav-link-text ms-1">Dashboard</span>
             </NavLink>
           </li>
-          {/* <li className="nav-item">
-            <Link to="/tables" className="nav-link text-white">
-              <div className="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                <i className="material-icons opacity-10">table_view</i>
-              </div>
-              <span className="nav-link-text ms-1">Tables</span>
-            </Link>
-          </li> */}
-          {/* <li className="nav-item">
-            <a className="nav-link text-white " href="../pages/calendar.html">
-              <div className="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                <i className="material-icons opacity-10">calendar_today</i>
-              </div>
-              <span className="nav-link-text ms-1">Calendar</span>
-            </a>
-          </li> */}
-          {/* <li className="nav-item">
-            <a
-              className="nav-link text-white "
-              href="../pages/notifications.html"
+          <li className="nav-item">
+            <NavLink
+              to="/monitoring"
+              className={({ isActive }) =>
+                isActive
+                  ? "nav-link text-white active bg-primary"
+                  : "nav-link text-white"
+              }
             >
               <div className="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                <i className="material-icons opacity-10">notifications</i>
+                <i className="material-icons opacity-10">trending_up</i>
               </div>
-              <span className="nav-link-text ms-1">Notifications</span>
-            </a>
-          </li> */}
+              <span className="nav-link-text ms-1">Monitoring</span>
+            </NavLink>
+          </li>
+          
+          
+          
           <li className="nav-item mt-3">
             <h6 className="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">
               Account pages

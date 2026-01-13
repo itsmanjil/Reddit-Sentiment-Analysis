@@ -13,7 +13,17 @@ nltk = "*"
 pandas = "*"
 python-dotenv = "*"
 scikit-learn = "==0.24.2"
-praw = "*"
+google-api-python-client = "*"
+google-auth-httplib2 = "*"
+google-auth-oauthlib = "*"
+youtube-comment-downloader = "*"
+emoji = "*"
+langdetect = "*"
+vaderSentiment = "*"
+transformers = "*"
+torch = "*"
+wordcloud = "*"
+matplotlib = "*"
 
 [dev-packages]
 

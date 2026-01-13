@@ -17,16 +17,17 @@ function Search() {
   const navigate = useNavigate();
   const [hasError, setHasError] = useState(false);
   const { logoutUser, authToken } = useContext(AuthContext);
-  const [product_name, setProductName] = useState("");
-  const [company_name, setCompanyName] = useState("");
-  const [keywords, setKeywords] = useState("");
+  const [video_url, setVideoUrl] = useState("");
+  const [max_comments, setMaxComments] = useState(200);
+  const [use_api, setUseApi] = useState(false);
+  const [sentimentModel, setSentimentModel] = useState("vader");
   const [isLoading, setIsLoading] = useState(false);
   const [searchError, setSearchError] = useState(false);
   const searchHandler = async (e) => {
     e.preventDefault();
-    console.log("Search button clicked");
-    if (!product_name || !company_name || !keywords) {
-      console.log("Empty");
+    console.log("Analyze button clicked");
+    if (!video_url) {
+      console.log("Empty video URL");
       setHasError(true);
       navigate("/search");
     } else {
@@ -35,15 +36,16 @@ function Search() {
         setHasError(false);
         const resp = await axios({
           method: "POST",
-          url: `http://127.0.0.1:8000/api/sentiment/search/`,
-          timeout: 1000 * 150,
+          url: `http://127.0.0.1:8000/api/youtube/analyze/`,
+          timeout: 1000 * 180,
           validateStatus: (status) => {
             return status < 500;
           },
           data: {
-            product_name: product_name,
-            company_name: company_name,
-            keywords: keywords,
+            video_url: video_url,
+            max_comments: max_comments,
+            use_api: use_api,
+            sentiment_model: sentimentModel,
           },
           headers: {
             Authorization: authToken
@@ -53,16 +55,16 @@ function Search() {
             accept: "application/json",
           },
         });
-        // console.log(resp.data.predicted_data);
+        console.log("YouTube analysis response:", resp.data);
         setIsLoading(false);
         navigate("/dashboard", {
-          state: resp.data.sentiment_data,
+          state: resp.data,
         });
       } catch (e) {
-        if (e.response.status === 500) {
+        if (e.response && e.response.status === 500) {
           setSearchError(true);
         }
-        // logoutUser();
+        console.error("Analysis error:", e);
         setIsLoading(false);
       }
     }
@@ -71,60 +73,51 @@ function Search() {
     <>
       <nav
         id="navbarExample"
-        class="navbar navbar-expand-lg fixed-top"
+        className="navbar navbar-expand-lg fixed-top"
         aria-label="Main navigation"
       >
-        <div class="container">
+        <div className="container">
           {/* <!-- Image Logo --> */}
-          <Link to="/" class="navbar-brand logo-image">
+          <Link to="/" className="navbar-brand logo-image">
             <img
               src="../assets/img/logo2.png"
               alt="alternative"
               style={{ height: "40px", width: "40px" }}
             />
           </Link>
-          <Link to="/" class="navbar-brand logo-text">
-            Gadget Reviews
+          <Link to="/" className="navbar-brand logo-text">
+            YouTube Sentiment
           </Link>
           <button
-            class="navbar-toggler p-0 border-0"
+            className="navbar-toggler p-0 border-0"
             type="button"
             id="navbarSideCollapse"
             aria-label="Toggle navigation"
           >
-            <span class="navbar-toggler-icon"></span>
+            <span className="navbar-toggler-icon"></span>
           </button>
 
           <div
-            class="navbar-collapse offcanvas-collapse"
+            className="navbar-collapse offcanvas-collapse"
             id="navbarsExampleDefault"
           >
-            <ul class="navbar-nav ms-auto navbar-nav-scroll">
-              <li class="nav-item">
-                <Link to="/" class="nav-link" aria-current="page">
+            <ul className="navbar-nav ms-auto navbar-nav-scroll">
+              <li className="nav-item">
+                <Link to="/" className="nav-link" aria-current="page">
                   Home
                 </Link>
               </li>
-              {/* <li class="nav-item">
-                <HashLink smooth to="#features" class="nav-link">
-                  Features
-                </HashLink>
-              </li>
-              <li class="nav-item">
-                <HashLink smooth to="#details" class="nav-link" href="#details">
-                  Details
-                </HashLink>
-              </li> */}
+              
 
               {token !== null && (
                 <>
-                  <li class="nav-item">
-                    <Link to="/dashboard" class="nav-link" aria-current="page">
+                  <li className="nav-item">
+                    <Link to="/dashboard" className="nav-link" aria-current="page">
                       Dashboard
                     </Link>
                   </li>
-                  <li class="nav-item">
-                    <Link to="/profile" class="nav-link" aria-current="page">
+                  <li className="nav-item">
+                    <Link to="/profile" className="nav-link" aria-current="page">
                       Profile
                     </Link>
                   </li>
@@ -135,9 +128,7 @@ function Search() {
                     onClick={logoutHandler}
                   >
                     <div className="nav-link" style={{ cursor: "pointer" }}>
-                      {/* <div className="nav-link text-center me-2 d-flex align-items-center justify-content-center">
-                <i className="material-icons opacity-10">logout</i>
-              </div> */}
+                      
                       <div>
                         <span className="nav-link-text ms-1">Logout</span>
                       </div>
@@ -146,99 +137,106 @@ function Search() {
                 </>
               )}
             </ul>
-            {/* {token == null && (
-              <span class="nav-item">
-                <Link to="/signout" class="btn-outline-sm">
-                  Log out
-                </Link>
-              </span>
-            )} */}
+            
           </div>
         </div>
       </nav>
-      <header class="ex-header">
-        <div class="container">
-          <div class="row">
-            <div class="col-xl-10 offset-xl-1">
-              <h1 class="text-center">Search Gadget</h1>
+      <header className="ex-header">
+        <div className="container">
+          <div className="row">
+            <div className="col-xl-10 offset-xl-1">
+              <h1 className="text-center">Analyze YouTube Video</h1>
             </div>
           </div>
         </div>
       </header>
-      <div class="container rounded bg-white mt-5 mb-5">
-        <div class="row">
-          <div class="col-md-3 ">
-            {/* <div class="d-flex flex-column align-items-center text-center p-3 py-5">
-                            <img class="rounded-circle mt-5" width="150px" />src="https://st3.depositphotos.com/15648834/17930/v/600/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg" />
-                            <span class ="font-weight-bold">Edogaru</span>
-                            <span class ="text-black-50">edogaru @mail.com.my</span>
-                            <span></span>
-                        </div> */}
+      <div className="container rounded bg-white mt-5 mb-5">
+        <div className="row">
+          <div className="col-md-3 ">
+            
           </div>
-          <div class="col-md-5 ">
-            <div class="p-3 py-5">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="text-right">Search Criteria</h4>
+          <div className="col-md-5 ">
+            <div className="p-3 py-5">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h4 className="text-right">Video Analysis Settings</h4>
               </div>
               <form>
                 {searchError && !isLoading && (
                   <p style={{ color: "red" }}>
-                    Error in fetching data. Try some other keywords!!
+                    Error analyzing video. Please check the URL and try again!
                   </p>
                 )}
-                <div class="row mt-3">
-                  <div class="col-md-12">
-                    <label class="labels">Product Name</label>
+                <div className="row mt-3">
+                  <div className="col-md-12">
+                    <label className="labels">YouTube Video URL</label>
                     <input
-                      name="product_name"
+                      name="video_url"
                       type="text"
-                      class="form-control"
-                      placeholder="enter product name"
-                      value={product_name}
+                      className="form-control"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={video_url}
                       onChange={(e) => {
-                        setProductName(e.target.value);
+                        setVideoUrl(e.target.value);
                       }}
                       required
                     />
                   </div>
-                  <div class="col-md-12">
-                    <label class="labels">Company Name</label>
+                  <div className="col-md-12 mt-3">
+                    <label className="labels">Max Comments (1-1000)</label>
                     <input
-                      name="company_name"
-                      type="text"
-                      class="form-control"
-                      placeholder="enter company name"
-                      value={company_name}
+                      name="max_comments"
+                      type="number"
+                      className="form-control"
+                      placeholder="200"
+                      min="1"
+                      max="1000"
+                      value={max_comments}
                       onChange={(e) => {
-                        setCompanyName(e.target.value);
+                        setMaxComments(parseInt(e.target.value) || 200);
                       }}
                     />
                   </div>
-                  <div class="col-md-12">
-                    <label class="labels">Relevant Keywords</label>
-                    <input
-                      name="keywords"
-                      type="text"
-                      class="form-control"
-                      placeholder="enter relevant keywords"
-                      value={keywords}
-                      onChange={(e) => {
-                        setKeywords(e.target.value);
-                      }}
-                    />
+                  <div className="col-md-12 mt-3">
+                    <label className="labels">
+                      <input
+                        type="checkbox"
+                        checked={use_api}
+                        onChange={(e) => setUseApi(e.target.checked)}
+                        style={{ marginRight: "8px" }}
+                      />
+                      Use YouTube API (faster, requires API key)
+                    </label>
+                    <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                      Uncheck to use scraper mode (slower but no API key needed)
+                    </p>
+                  </div>
+                  <div className="col-md-12 mt-3">
+                    <label className="labels">Sentiment Model</label>
+                    <select
+                      className="form-control"
+                      value={sentimentModel}
+                      onChange={(e) => setSentimentModel(e.target.value)}
+                    >
+                      <option value="vader">VADER (fast, recommended)</option>
+                      <option value="roberta">RoBERTa (high accuracy, slower)</option>
+                      <option value="tfidf">TF-IDF (legacy)</option>
+                    </select>
+                    <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                      RoBERTa is slower on CPU and needs extra backend deps.
+                    </p>
                   </div>
                   {hasError && (
-                    <p style={{ color: "red" }}>All fields are required</p>
+                    <p style={{ color: "red" }}>YouTube URL is required</p>
                   )}
                 </div>
 
-                <div class="mt-5 text-center">
+                <div className="mt-5 text-center">
                   <input
-                    class="p-2 mb-2 bg-primary text-white w-45 my-4 mb-2"
-                    // class="btn btn-primary profile-button"
+                    className="p-2 mb-2 bg-primary text-white w-45 my-4 mb-2"
+                    // className="btn btn-primary profile-button"
                     type="button"
                     onClick={searchHandler}
-                    value={isLoading ? `Searching...` : `Start Search`}
+                    value={isLoading ? `Analyzing...` : `Analyze Video`}
                     disabled={isLoading ? true : false}
                   ></input>
                 </div>

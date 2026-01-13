@@ -14,69 +14,22 @@ export default function Report() {
   let user_name = location.state.user_name;
   console.log(sentimentData);
 
-  const [fetchReviewCount, setFetchReviewCount] = useState(0);
+  const [totalComments, setTotalComments] = useState(0);
   const [user, setUser] = useState({});
-  // const getData = async () => {
-  //     try {
-  //       const token = localStorage.getItem("authToken");
-  //       const { user_id } = jwt_decode(token);
-  //       if (user_id) {
-  //         const userDatas = await axios({
-  //           method: "GET",
-  //           url: `http://127.0.0.1:8000/api/user/me/${user_id}`,
-  //           timeout: 1000 * 10,
-  //           validateStatus: (status) => {
-  //             return status < 500;
-  //           },
-  //           headers: {
-  //             Authorization: authToken
-  //               ? "Bearer " + String(authToken.access)
-  //               : null,
-  //             "Content-Type": "application/json",
-  //             accept: "application/json",
-  //           },
-  //         });
-  //         setUser({
-  //           user_name: userDatas.data.user_name,
-  //           email: userDatas.data.email,
-  //         });
-  //         console.log("user", user);
 
-  //       }
-  //     } catch (err) {
-  //       console.log(err);
 
-  //     }
-  //   };
-  //   useEffect(() => {
-  //     getData();
-  //   }, []);
   const handlePrint = () => {
      window.print()
   }
 
-//   function printPageArea(areaID) {
-//     console.log("error", areaID);
-//     var printContent = document.getElementById("printPage");
-//     console.log(printContent);
-//     var WinPrint = window.open("", "", "width=900,height=650");
-//     // WinPrint.document.write(
-//     //   '<link rel="stylesheet" type="text/css" href="./report.css" media="print">'
-//     // );
-//     WinPrint.document.write(printContent.innerHTML);
-//     WinPrint.document.close();
-//     WinPrint.focus();
-//     WinPrint.print();
-//     WinPrint.close();
-//   }
 
   useEffect(() => {
     let total = 0;
-    sentimentData.tweetdata.forEach((sentiment) => {
+    sentimentData.sentimentBreakdown.forEach((sentiment) => {
       total += sentiment.value;
     });
 
-    setFetchReviewCount(total);
+    setTotalComments(total);
   }, []);
 
   return (
@@ -94,7 +47,7 @@ export default function Report() {
         <div className="dropdown float-lg-end pe-4 d-print-none">
           <button
             onClick={handlePrint}
-            class="btn btn-dark"
+            className="btn btn-dark"
             // style={{ border: "none", background: "transparent" }}
           >
             <span className="fas fa-print"></span> Print
@@ -107,7 +60,7 @@ export default function Report() {
           <div className="p-5" id="printPage">
             <section className="top-content bb d-flex justify-content-between">
               <div className="logo">
-                <h2>Gadget Reviews</h2>
+                <h2>YouTube Sentiment Report</h2>
                 {/* <!-- <img src="logo.png" alt="" className="img-fluid"> --> */}
               </div>
               <div className="top-left">
@@ -126,8 +79,8 @@ export default function Report() {
               <div className="col-10">
                 <div className="row bb pb-3">
                   <div className="col-7">
-                    <p>You searched for:</p>
-                    <h2>{sentimentData.product_name}</h2>
+                    <p>Video analyzed:</p>
+                    <h2>{sentimentData.videoTitle}</h2>
                     {/* <p className="address"> 777 Brockton Avenue, <br/> Abington MA 2351, <br/>Vestavia Hills AL </p> */}
                   </div>
                   <div className="col-5">
@@ -139,7 +92,7 @@ export default function Report() {
                 <div className="row extra-info pt-3">
                   <div className="col-7">
                     <p>
-                      Total Fetched Reviews: <span>{fetchReviewCount}</span>
+                      Total Comments Analyzed: <span>{totalComments}</span>
                     </p>
                   </div>
                   <div className="col-5">
@@ -156,19 +109,21 @@ export default function Report() {
               <table className="table table-hover">
                 <thead>
                   <tr>
-                    <td>Sentiments</td>
+                    <td>Sentiment</td>
                     <td>Total</td>
                   </tr>
                 </thead>
                 <tbody>
-                  {sentimentData.tweetdata.map((sentiment) => {
+                  {sentimentData.sentimentBreakdown.map((sentiment, index) => {
+                    const label =
+                      sentiment.sentiment || sentiment.name || `item-${index}`;
                     return (
-                      <tr>
+                      <tr key={`${label}-${index}`}>
                         <td>
                           <div className="media">
                             <div className="media-body">
                               <p className="mt-0 title">
-                                {sentiment.sentiment}
+                                {label}
                               </p>
                             </div>
                           </div>
@@ -186,75 +141,21 @@ export default function Report() {
                 <div className="col-12">
                   <p className="m-0 font-weight-bold"> Note: </p>
                   <p>
-                    Your Search for {sentimentData.product_name} product
-                    resulted in a total of {fetchReviewCount} reviews, It
-                    contains {sentimentData.tweetdata[2].value} positive,{" "}
-                    {sentimentData.tweetdata[0].value} negative and{" "}
-                    {sentimentData.tweetdata[1].value} neutral reviews.
+                    Your analysis for {sentimentData.videoTitle} processed {totalComments} comments.
+                    It includes {sentimentData.sentimentBreakdown[2].value} positive,{" "}
+                    {sentimentData.sentimentBreakdown[0].value} negative, and{" "}
+                    {sentimentData.sentimentBreakdown[1].value} neutral comments.
                   </p>
                 </div>
-                {/* <!-- <div className="col-4">
-                    <table className="table border-0 table-hover">
-                        <tr>
-                            <td>Total:</td>
-                            <td>800$</td>
-                        </tr>
-                        <tr>
-                            <td>Tax:</td>
-                            <td>15$</td>
-                        </tr>
-                        <tr>
-                            <td>Deliver:</td>
-                            <td>10$</td>
-                        </tr>
-                        <tfoot>
-                            <tr>
-                                <td>Total:</td>
-                                <td>825$</td>
-                            </tr>
-                        </tfoot>
-                    </table> */}
+                
 
-                {/* Signature -->
-                    <!-- <div className="col-12">
-                        <img src="signature.png" className="img-fluid" alt="">
-                        <p className="text-center m-0"> Director Signature </p>
-                    </div>
-                </div> -->  */}
+                
               </div>
             </section>
 
-            {/* <!-- Cart BG -->
-        <!-- <img src="cart.jpg" className="img-fluid cart-bg" alt=""> --> */}
+            
 
-            {/* <footer>
-            <hr/>
-            <p className="m-0 text-center">
-                Report generated at Gadget Reviews - <a href="#!">www.gadgetreviews.com</a>
-            </p>
-            <div className="social pt-3">
-                <span className="pr-2">
-                    <i className="fas fa-mobile-alt"></i>
-                    <span>Gadget Reiews</span>
-                </span>
-                <span className="pr-2">
-                    <i className="fas fa-envelope"></i>
-                    <span>me@gadget.com</span>
-                </span>
-                <span className="pr-2">
-                    <i className="fab fa-facebook-f"></i>
-                    <span>/sabur.7264</span>
-                </span>
-                <span className="pr-2">
-                    <i className="fab fa-youtube"></i>
-                    <span>/abdussabur</span>
-                </span>
-                <span className="pr-2">
-                    <i className="fab fa-github"></i>
-                    <span>/example</span>
-                </span>
-            </div>
-        </footer> */}
+            
           </div>
         </div>
       </div>

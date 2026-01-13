@@ -12,30 +12,41 @@ window.onload = function () {
 };
 
 function scrollFunction() {
+	const navbarExample = document.getElementById("navbarExample");
+	if (!navbarExample) {
+		return;
+	}
+
 	if (document.documentElement.scrollTop > 30) {
-		document.getElementById("navbarExample").classList.add("top-nav-collapse");
+		navbarExample.classList.add("top-nav-collapse");
 	} else if ( document.documentElement.scrollTop < 30 ) {
-		document.getElementById("navbarExample").classList.remove("top-nav-collapse");
+		navbarExample.classList.remove("top-nav-collapse");
 	}
 }
 
 // Navbar on mobile
 let elements = document.querySelectorAll(".nav-link:not(.dropdown-toggle)");
+const offcanvas = document.querySelector(".offcanvas-collapse");
 
-for (let i = 0; i < elements.length; i++) {
-	elements[i].addEventListener("click", () => {
-		document.querySelector(".offcanvas-collapse").classList.toggle("open");
-	});
+if (offcanvas) {
+	for (let i = 0; i < elements.length; i++) {
+		elements[i].addEventListener("click", () => {
+			offcanvas.classList.toggle("open");
+		});
+	}
 }
 
-document.querySelector(".navbar-toggler").addEventListener("click", () => {
-  	document.querySelector(".offcanvas-collapse").classList.toggle("open");
-});
+const navbarToggler = document.querySelector(".navbar-toggler");
+if (navbarToggler && offcanvas) {
+	navbarToggler.addEventListener("click", () => {
+		offcanvas.classList.toggle("open");
+	});
+}
 
 // Hover on desktop
 function toggleDropdown(e) {
 	const _d = e.target.closest(".dropdown");
-	let _m = document.querySelector(".dropdown-menu", _d);
+	let _m = _d ? _d.querySelector(".dropdown-menu") : null;
 
 	setTimeout(
 		function () {
@@ -74,7 +85,8 @@ if (dropdownCheck !== null) {
 /* Rotating Text - Word Cycle */
 var checkReplace = document.querySelector('.replace-me');
 if (checkReplace !== null) { 
-	var replace = new ReplaceMe(document.querySelector('.replace-me'), {
+	if (typeof ReplaceMe !== "undefined") {
+		var replace = new ReplaceMe(document.querySelector('.replace-me'), {
 		animation: 'animated fadeIn',                       // Animation class or classes
 		speed: 2000,                                        // Delay between each phrase in miliseconds
 		separator: ',',                                     // Phrases separator
@@ -85,43 +97,50 @@ if (checkReplace !== null) {
 		onInit: false,                                      // Function
 		onChange: false,                                    // Function
 		onComplete: false                                   // Function
-	});
+		});
+	}
 }
   
 
 /* Card Slider - Swiper */
-var cardSlider = new Swiper('.card-slider', {
-	autoplay: {
-		delay: 4000,
-		disableOnInteraction: false
-	},
-	loop: true,
-	navigation: {
-		nextEl: '.swiper-button-next',
-		prevEl: '.swiper-button-prev'
-	},
-	slidesPerView: 3,
-	spaceBetween: 70,
-	breakpoints: {
-		// when window is <= 767px
-		767: {
-			slidesPerView: 1
+var cardSliderElement = document.querySelector('.card-slider');
+if (cardSliderElement && typeof Swiper !== "undefined") {
+	var cardSlider = new Swiper('.card-slider', {
+		autoplay: {
+			delay: 4000,
+			disableOnInteraction: false
 		},
-		// when window is <= 991px
-		991: {
-			slidesPerView: 2,
-			spaceBetween: 40
+		loop: true,
+		navigation: {
+			nextEl: '.swiper-button-next',
+			prevEl: '.swiper-button-prev'
+		},
+		slidesPerView: 3,
+		spaceBetween: 70,
+		breakpoints: {
+			// when window is <= 767px
+			767: {
+				slidesPerView: 1
+			},
+			// when window is <= 991px
+			991: {
+				slidesPerView: 2,
+				spaceBetween: 40
+			}
 		}
-	}
-});
+	});
+}
 
 
 /* Back To Top Button */
 // Get the button
-myButton = document.getElementById("myBtn");
+let myButton = document.getElementById("myBtn");
 
 // When the user scrolls down 20px from the top of the document, show the button
 function scrollFunctionBTT() {
+	if (!myButton) {
+		return;
+	}
 	if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
 		myButton.style.display = "block";
 	} else {

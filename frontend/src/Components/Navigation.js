@@ -11,60 +11,51 @@ function Navigation() {
       {/* Navbar */}
       <nav
         id="navbarExample"
-        class="navbar navbar-expand-lg fixed-top"
+        className="navbar navbar-expand-lg fixed-top"
         aria-label="Main navigation"
       >
-        <div class="container">
+        <div className="container">
           {/* <!-- Image Logo --> */}
-          <Link to="/" class="navbar-brand logo-image">
+          <Link to="/" className="navbar-brand logo-image">
             <img
               src="../assets/img/logo2.png"
               alt="alternative"
               style={{ height: "40px", width: "40px" }}
             />
           </Link>
-          <Link to="/" class="navbar-brand logo-text">
+          <Link to="/" className="navbar-brand logo-text">
             Gadget Reviews
           </Link>
           <button
-            class="navbar-toggler p-0 border-0"
+            className="navbar-toggler p-0 border-0"
             type="button"
             id="navbarSideCollapse"
             aria-label="Toggle navigation"
           >
-            <span class="navbar-toggler-icon"></span>
+            <span className="navbar-toggler-icon"></span>
           </button>
 
           <div
-            class="navbar-collapse offcanvas-collapse"
+            className="navbar-collapse offcanvas-collapse"
             id="navbarsExampleDefault"
           >
-            <ul class="navbar-nav ms-auto navbar-nav-scroll">
-              <li class="nav-item">
-                <Link to="/" class="nav-link active" aria-current="page">
+            <ul className="navbar-nav ms-auto navbar-nav-scroll">
+              <li className="nav-item">
+                <Link to="/" className="nav-link active" aria-current="page">
                   Home
                 </Link>
               </li>
-              {/* <li class="nav-item">
-                <HashLink smooth to="#features" class="nav-link">
-                  Features
-                </HashLink>
-              </li>
-              <li class="nav-item">
-                <HashLink smooth to="#details" class="nav-link" href="#details">
-                  Details
-                </HashLink>
-              </li> */}
+              
 
               {token !== null && (
                 <>
-                  <li class="nav-item">
-                    <Link to="/dashboard" class="nav-link" aria-current="page">
+                  <li className="nav-item">
+                    <Link to="/dashboard" className="nav-link" aria-current="page">
                       Dashboard
                     </Link>
                   </li>
-                  <li class="nav-item">
-                    <Link to="/profile" class="nav-link" aria-current="page">
+                  <li className="nav-item">
+                    <Link to="/profile" className="nav-link" aria-current="page">
                       Profile
                     </Link>
                   </li>
@@ -72,8 +63,8 @@ function Navigation() {
               )}
             </ul>
             {token == null && (
-              <span class="nav-item">
-                <Link to="/signin" class="btn-outline-sm">
+              <span className="nav-item">
+                <Link to="/signin" className="btn-outline-sm">
                   Log in
                 </Link>
               </span>

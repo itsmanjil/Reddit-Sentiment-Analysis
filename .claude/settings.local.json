@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pip install:*)",
+      "Bash(python manage.py migrate:*)",
+      "Bash(python manage.py check:*)"
+    ]
+  }
+}

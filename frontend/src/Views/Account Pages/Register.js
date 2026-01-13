@@ -5,11 +5,11 @@ import RegisterForm from "./RegisterForm";
 function Register() {
   return (
     <>
-    <header class="ex-header">
-            <div class="container">
-                <div class="row">
-                    <div class="col-xl-10 offset-xl-1">
-                        <h1 class="text-center">Sign Up</h1>
+    <header className="ex-header">
+            <div className="container">
+                <div className="row">
+                    <div className="col-xl-10 offset-xl-1">
+                        <h1 className="text-center">Sign Up</h1>
                     </div> 
                 </div> 
             </div> 

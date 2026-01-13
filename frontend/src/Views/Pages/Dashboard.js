@@ -3,8 +3,6 @@ import React, { useContext, useEffect, useState, useRef } from "react";
 
 //focusing on emmail in login
 
-//effect ==> run code in every render when data changes
-//Hook that allows you to have state variables in functional components reactive value,change the value
 import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useCurrentPng } from "recharts-to-png";
@@ -27,6 +25,7 @@ import {
   Cell,
   AreaChart,
   Area,
+  BarChart,
   Bar,
   ComposedChart,
   ScatterChart,
@@ -92,60 +91,7 @@ const data = [
     neutral: 2100,
   },
 ];
-// const country = [
-//   {
-//     name: "USA",
-//     total: 8800,
-//     positive: 4000,
-//     negative: 2400,
-//     neutral: 2400,
-//     z: 1,
-//   },
-//   {
-//     name: "Australia",
-//     total: 7000,
-//     positive: 3000,
-//     negative: 1398,
-//     neutral: 2210,
-//     z: 2,
-//   },
-//   {
-//     name: "Nepal",
-//     total: 13000,
-//     positive: 2000,
-//     negative: 9800,
-//     neutral: 2290,
-//     z: 3,
-//   },
-//   {
-//     name: "India",
-//     total: 9000,
-//     positive: 2780,
-//     negative: 3908,
-//     neutral: 2000,
-//     z: 4,
-//   },
-//   {
-//     name: "Germany",
-//     total: 9900,
-//     positive: 1890,
-//     negative: 4800,
-//     neutral: 2181,
-//     z: 5,
-//   },
-//   {
-//     name: "Canada",
-//     total: 10000,
-//     positive: 2390,
-//     negative: 3800,
-//     neutral: 2500,
-//     z: 6,
-//   },
-// ];
 let data01 = [
-  // { name: "Positive", value: 0 },
-  // { name: "Negative", value: 0 },
-  // { name: "Neutral", value: 0 },
 ];
 // custom label for pie chart
 const COLORS = ["#FF0000", "#0000FF", "#008001"];
@@ -178,17 +124,30 @@ const renderCustomizedLabel = ({
 };
 function Dashboard(props) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { authToken } = useContext(AuthContext);
 
   function refresh() {}
   function calendar() {}
   const [user, setUser] = useState({});
-  const [tweetdata, setTweetdata] = useState();
+  const [sentimentBreakdown, setSentimentBreakdown] = useState();
+  const [videoData, setVideoData] = useState();
   const [hourdata, setHourdata] = useState();
   const [fetchedDate, setFetchedDate] = useState();
-  const [product_name, setProductName] = useState();
+  const [videoTitle, setVideoTitle] = useState();
   const [hasSearched, setHasSearched] = useState(false);
   const [grpahState, setGraphState] = useState(false);
+  const [searchedList, setSearchedList] = useState([]);
+  const [topWordsPositive, setTopWordsPositive] = useState([]);
+  const [topWordsNegative, setTopWordsNegative] = useState([]);
+  const [topComments, setTopComments] = useState([]);
+  const [filterStats, setFilterStats] = useState(null);
+  const [userStats, setUserStats] = useState({
+    totalVideos: 0,
+    totalComments: 0,
+    avgPositive: 0,
+    avgNegative: 0,
+  });
 
   const getData = async () => {
     try {
@@ -215,45 +174,102 @@ function Dashboard(props) {
           user_name: userDatas.data.user_name,
           email: userDatas.data.email,
         });
+        const list = Array.isArray(userDatas.data.searched_list)
+          ? userDatas.data.searched_list
+          : [];
+        setSearchedList(list);
         console.log("user", user);
 
-        const tweetData = await axios({
-          method: "GET",
-          url: `http://127.0.0.1:8000/api/sentiment/get_sentiment_data/`,
-          timeout: 1000 * 10,
-          validateStatus: (status) => {
-            return status < 500;
-          },
-          data: {
-            product_name: product_name,
-          },
-          headers: {
-            Authorization: authToken
-              ? "Bearer " + String(authToken.access)
-              : null,
-            "Content-Type": "application/json",
-            accept: "application/json",
-          },
-        });
+        // Fetch all user's analyses for statistics
+        try {
+          const analysesResponse = await axios({
+            method: "GET",
+            url: "http://127.0.0.1:8000/api/youtube/analyses/",
+            timeout: 1000 * 10,
+            validateStatus: (status) => {
+              return status < 500;
+            },
+            headers: {
+              Authorization: authToken
+                ? "Bearer " + String(authToken.access)
+                : null,
+              "Content-Type": "application/json",
+              accept: "application/json",
+            },
+          });
 
-        // let dataParsed = JSON.parse(tweetData.data.data.sentiment_data);
-        setTweetdata(tweetData.data.data.output_sentiment);
-        setHourdata(tweetData.data.data.hour_data);
-        setProductName(tweetData.data.data.product_name);
-        setFetchedDate(tweetData.data.data.fetched_date);
-        setGraphState(tweetData.data.data.graph_data_available);
-        console.log("check", tweetData);
-        console.log(
-          user.user_name,
-          "tweetData....",
-          tweetData.data.data.hour_data,
-          tweetData.data.data.product_name,
-          tweetData.data.data.fetched_date,
-          tweetData.data.data.output_sentiment
-          // JSON.parse(tweetData.data.data.sentiment_data)
-        );
+          if (analysesResponse.status === 200 && analysesResponse.data.data) {
+            const analyses = analysesResponse.data.data;
 
-        setHasSearched(true);
+            // Calculate aggregated statistics
+            let totalVideos = analyses.length;
+            let totalComments = 0;
+            let totalPositive = 0;
+            let totalNegative = 0;
+            let totalNeutral = 0;
+
+            analyses.forEach((analysis) => {
+              const positive = analysis.sentiment_data?.Positive || 0;
+              const negative = analysis.sentiment_data?.Negative || 0;
+              const neutral = analysis.sentiment_data?.Neutral || 0;
+              const total = positive + negative + neutral;
+
+              totalComments += total;
+              totalPositive += positive;
+              totalNegative += negative;
+              totalNeutral += neutral;
+            });
+
+            const avgPositive = totalComments > 0 ? ((totalPositive / totalComments) * 100).toFixed(1) : 0;
+            const avgNegative = totalComments > 0 ? ((totalNegative / totalComments) * 100).toFixed(1) : 0;
+
+            setUserStats({
+              totalVideos,
+              totalComments,
+              avgPositive,
+              avgNegative,
+            });
+          }
+        } catch (err) {
+          console.log("Error fetching user analyses:", err);
+        }
+
+        // Check if YouTube analysis data was passed from Search page
+        if (location.state && location.state.sentiment_data) {
+          const youtubeData = location.state;
+          console.log("YouTube data received:", youtubeData);
+
+          const sentimentArray = [
+            { name: "Negative", value: youtubeData.sentiment_data.Negative || 0 },
+            { name: "Neutral", value: youtubeData.sentiment_data.Neutral || 0 },
+            { name: "Positive", value: youtubeData.sentiment_data.Positive || 0 },
+          ];
+
+          setSentimentBreakdown(sentimentArray);
+          setVideoData(youtubeData.video);
+          setVideoTitle(youtubeData.video?.title || "YouTube Video");
+          setFetchedDate(new Date().toLocaleDateString());
+          setGraphState(false); // No hourly data for YouTube yet
+          setHasSearched(true);
+
+          // Set word cloud data (top words for positive and negative comments)
+          if (youtubeData.top_words_positive) {
+            setTopWordsPositive(youtubeData.top_words_positive);
+          }
+          if (youtubeData.top_words_negative) {
+            setTopWordsNegative(youtubeData.top_words_negative);
+          }
+
+          // Set top comments (like-weighted sentiment)
+          if (youtubeData.like_weighted_sentiment) {
+            setTopComments(youtubeData.like_weighted_sentiment);
+          }
+
+          // Set filter statistics
+          if (youtubeData.filtered) {
+            setFilterStats(youtubeData.filtered);
+          }
+        }
       }
     } catch (err) {
       console.log(err);
@@ -262,7 +278,7 @@ function Dashboard(props) {
   };
   useEffect(() => {
     getData();
-  }, []);
+  }, [location.state]);
 
   //line graph
   let [getLinePng, { ref: lineRef }] = useCurrentPng();
@@ -291,13 +307,13 @@ function Dashboard(props) {
   const navigateToReport = () => {
     const token = localStorage.getItem("authToken");
     const { user_id, user_name } = jwt_decode(token);
-    navigate(`/report/${product_name}`, {
+    navigate(`/report/${videoTitle}`, {
       state: {
         user_name,
-        tweetdata,
+        sentimentBreakdown,
         hourdata,
         fetchedDate,
-        product_name,
+        videoTitle,
       },
     });
   };
@@ -309,7 +325,7 @@ function Dashboard(props) {
         <nav
           className="navbar navbar-main navbar-expand-lg px-0 shadow-none border-radius-xl"
           id="navbarBlur"
-          navbar-scroll="true"
+          data-scroll="true"
         >
           <div className="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
@@ -321,27 +337,14 @@ function Dashboard(props) {
               id="navbar"
             >
               <div className="ms-md-auto pe-md-3 d-flex align-items-center">
-                {/* <div className="dropdown float-lg-end pe-4">
-                  <button
-                    onClick={refresh}
-                    class="fas fa-sync"
-                    style={{ border: "none", background: "transparent" }}
-                  ></button>
-                </div>
-                <div className="dropdown float-lg-end pe-4">
-                  <button
-                    onClick={calendar}
-                    class="far fa-calendar"
-                    style={{ border: "none", background: "transparent" }}
-                  ></button>
-                </div> */}
+                
 
                 <div className="input-group input-group-outline">
                   <Link to="/search">
                     <input
-                      class="btn btn-light profile-button bg-primary"
+                      className="btn btn-light profile-button bg-primary"
                       type="button"
-                      value="Search Gadget"
+                      value="Analyze Video"
                       style={{
                         color: "white",
                         margin: 0,
@@ -355,17 +358,14 @@ function Dashboard(props) {
                 <div className="dropdown float-lg-end pe-4">
                   <button
                     onClick={navigateToReport}
-                    class="fas fa-file"
+                    className="fas fa-file"
                     style={{ border: "none", background: "transparent" }}
                   >
                     <span style={{ marginLeft: "5px" }}>Report</span>
                   </button>
                 </div>
               )}
-              {/* <div className="input-group input-group-outline">
-                  <label className="form-label">Search...</label>
-                  <input type="text" className="form-control" />
-                </div> */}
+              
 
               <ul className="navbar-nav  justify-content-end">
                 <li className="nav-item d-flex align-items-center">
@@ -378,184 +378,278 @@ function Dashboard(props) {
                   </Link>
                 </li>
                 <li className="nav-item d-xl-none ps-3 d-flex align-items-center">
-                  <a
-                    href="javascript:;"
+                  <button
+                    type="button"
                     className="nav-link text-body p-0"
                     id="iconNavbarSidenav"
+                    style={{ border: "none", background: "transparent" }}
                   >
                     <div className="sidenav-toggler-inner">
                       <i className="sidenav-toggler-line"></i>
                       <i className="sidenav-toggler-line"></i>
                       <i className="sidenav-toggler-line"></i>
                     </div>
-                  </a>
+                  </button>
                 </li>
-                {/* <li className="nav-item px-3 d-flex align-items-center">
-                  <a href="javascript:;" className="nav-link text-body p-0">
-                    <i className="fa fa-cog fixed-plugin-button-nav cursor-pointer"></i>
-                  </a>
-                </li> */}
-                {/* <li className="nav-item dropdown pe-2 d-flex align-items-center">
-                  <a
-                    href="javascript:;"
-                    className="nav-link text-body p-0"
-                    id="dropdownMenuButton"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                  >
-                    <i className="fa fa-bell cursor-pointer"></i>
-                  </a> */}
-                {/* <ul className="dropdown-menu  dropdown-menu-end  px-2 py-3 me-sm-n4" aria-labelledby="dropdownMenuButton">
-                                        <li className="mb-2">
-                                            <a className="dropdown-item border-radius-md" href="javascript:;">
-                                                <div className="d-flex py-1">
-                                                    <div className="my-auto">
-                                                        <img src="../assets/img/team-2.jpg" className="avatar avatar-sm  me-3 " />
-                                                    </div>
-                                                    <div className="d-flex flex-column justify-content-center">
-                                                        <h6 className="text-sm font-weight-normal mb-1">
-                                                            <span className="font-weight-bold">New message</span> from Laur
-                                                        </h6>
-                                                        <p className="text-xs text-secondary mb-0">
-                                                            <i className="fa fa-clock me-1"></i>
-                                                            13 minutes ago
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li className="mb-2">
-                                            <a className="dropdown-item border-radius-md" href="javascript:;">
-                                                <div className="d-flex py-1">
-                                                    <div className="my-auto">
-                                                        <img src="../assets/img/small-logos/logo-spotify.svg" className="avatar avatar-sm bg-gradient-dark  me-3 " />
-                                                    </div>
-                                                    <div className="d-flex flex-column justify-content-center">
-                                                        <h6 className="text-sm font-weight-normal mb-1">
-                                                            <span className="font-weight-bold">New album</span> by Travis Scott
-                                                        </h6>
-                                                        <p className="text-xs text-secondary mb-0">
-                                                            <i className="fa fa-clock me-1"></i>
-                                                            1 day
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a className="dropdown-item border-radius-md" href="javascript:;">
-                                                <div className="d-flex py-1">
-                                                    <div className="avatar avatar-sm bg-gradient-secondary  me-3  my-auto">
-                                                    </div>
-                                                    <div className="d-flex flex-column justify-content-center">
-                                                        <h6 className="text-sm font-weight-normal mb-1">
-                                                            Payment successfully completed
-                                                        </h6>
-                                                        <p className="text-xs text-secondary mb-0">
-                                                            <i className="fa fa-clock me-1"></i>
-                                                            2 days
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    </ul> */}
+                
+                
+                
                 {/* </li> */}
               </ul>
             </div>
           </div>
         </nav>
 
-        {!hasSearched && <h6 className="mx-3">Nothing to show.</h6>}
+        {/* User Statistics Overview */}
+        {userStats.totalVideos > 0 && !hasSearched && (
+          <div className="container-fluid py-4">
+            <div className="row mb-3">
+              <div className="col-12">
+                <div className="card" style={{ backgroundColor: "#f8f9fa", border: "2px solid #e9ecef" }}>
+                  <div className="card-header pb-0" style={{ backgroundColor: "transparent" }}>
+                    <div className="row align-items-center">
+                      <div className="col">
+                        <h6 className="mb-0">
+                          <i className="fas fa-chart-line" style={{ color: "#3498db", marginRight: "8px" }}></i>
+                          Your Analysis Overview
+                        </h6>
+                        <p className="text-xs text-muted mb-0 mt-1">
+                          Aggregated statistics from all your YouTube video analyses
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="card-body pt-3">
+                    <div className="row">
+                      <div className="col-xl-3 col-md-6 mb-3">
+                        <div className="text-center p-3" style={{ backgroundColor: "white", borderRadius: "8px" }}>
+                          <i className="fas fa-video" style={{ fontSize: "28px", color: "#e74c3c" }}></i>
+                          <h3 className="mt-2 mb-0">{userStats.totalVideos}</h3>
+                          <p className="text-sm text-muted mb-0">Videos Analyzed</p>
+                        </div>
+                      </div>
+                      <div className="col-xl-3 col-md-6 mb-3">
+                        <div className="text-center p-3" style={{ backgroundColor: "white", borderRadius: "8px" }}>
+                          <i className="fas fa-comments" style={{ fontSize: "28px", color: "#3498db" }}></i>
+                          <h3 className="mt-2 mb-0">{userStats.totalComments.toLocaleString()}</h3>
+                          <p className="text-sm text-muted mb-0">Total Comments</p>
+                        </div>
+                      </div>
+                      <div className="col-xl-3 col-md-6 mb-3">
+                        <div className="text-center p-3" style={{ backgroundColor: "white", borderRadius: "8px" }}>
+                          <i className="fas fa-smile" style={{ fontSize: "28px", color: "#2ecc71" }}></i>
+                          <h3 className="mt-2 mb-0" style={{ color: "#2ecc71" }}>{userStats.avgPositive}%</h3>
+                          <p className="text-sm text-muted mb-0">Avg Positive</p>
+                        </div>
+                      </div>
+                      <div className="col-xl-3 col-md-6 mb-3">
+                        <div className="text-center p-3" style={{ backgroundColor: "white", borderRadius: "8px" }}>
+                          <i className="fas fa-frown" style={{ fontSize: "28px", color: "#e74c3c" }}></i>
+                          <h3 className="mt-2 mb-0" style={{ color: "#e74c3c" }}>{userStats.avgNegative}%</h3>
+                          <p className="text-sm text-muted mb-0">Avg Negative</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="row mt-2">
+                      <div className="col-12 text-center">
+                        <p className="text-xs text-muted mb-0">
+                          <i className="fas fa-info-circle"></i> These statistics are calculated across all your analyzed videos.
+                          <Link to="/monitoring" style={{ marginLeft: "8px", textDecoration: "none" }}>
+                            View detailed history →
+                          </Link>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!hasSearched && userStats.totalVideos === 0 && (
+          <div className="container-fluid py-4">
+            <div className="row">
+              <div className="col-12">
+                <div className="card text-center" style={{ padding: "40px" }}>
+                  <div className="card-body">
+                    <i className="fas fa-chart-bar" style={{ fontSize: "64px", color: "#ccc", marginBottom: "20px" }}></i>
+                    <h4>No analysis yet</h4>
+                    <p className="text-muted">Click "Analyze Video" to get started with your first YouTube sentiment analysis.</p>
+                    <Link to="/search">
+                      <button className="btn btn-primary mt-3">
+                        <i className="fas fa-play-circle"></i> Analyze Your First Video
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {hasSearched && (
           <div className="container-fluid py-4">
             <div className="row">
-              <h6>Search results for {product_name}</h6>
+              <h6>Analysis results for: {videoTitle}</h6>
+              {videoData && (
+                <p style={{ fontSize: "14px", color: "#666" }}>
+                  Channel: {videoData.channel} | Views: {videoData.view_count?.toLocaleString()} | Likes: {videoData.like_count?.toLocaleString()}
+                </p>
+              )}
               <div className="col-xl-3 col-sm-6 mb-xl-0 mb-4">
                 <div className="card">
                   <div className="card-header p-3 pt-2">
-                    {/* <div className="icon icon-lg icon-shape bg-gradient-dark shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                                        <i className="material-icons opacity-10">weekend</i>
-                                    </div> */}
+                    
                     <div className="text-left pt-1">
                       <p className="text-sm mb-0 text-capitalize">
-                        Total Reviews
+                        Total Comments
                       </p>
                       <h4 className="mb-0">
-                        {tweetdata[0].value +
-                          tweetdata[1].value +
-                          tweetdata[2].value}
+                        {sentimentBreakdown[0].value +
+                          sentimentBreakdown[1].value +
+                          sentimentBreakdown[2].value}
                       </h4>
-                      {/* pull total reviews data into this h4 */}
+                      {/* pull total comments data into this h4 */}
                     </div>
                   </div>
                   <hr className="dark horizontal my-0" />
-                  {/* <div className="card-footer p-3">
-                                    <p className="mb-0"><span className="text-success text-sm font-weight-bolder">+55% </span>than lask week</p>
-                                </div> */}
+                  
                 </div>
               </div>
               <div className="col-xl-3 col-sm-6 mb-xl-0 mb-4">
                 <div className="card">
                   <div className="card-header p-3 pt-2">
-                    {/* <div className="icon icon-lg icon-shape bg-gradient-dark shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                                        <i className="material-icons opacity-10">weekend</i>
-                                    </div> */}
+                    
                     <div className="text-left pt-1">
                       <p className="text-sm mb-0 text-capitalize">
-                        Positive Reviews
+                        Positive Comments
                       </p>
-                      <h4 className="mb-0">{tweetdata[2].value}</h4>
-                      {/* pull positive reviews data into this h4 */}
+                      <h4 className="mb-0">{sentimentBreakdown[2].value}</h4>
+                      {/* pull positive comments data into this h4 */}
                     </div>
                   </div>
                   <hr className="dark horizontal my-0" />
-                  {/* <div className="card-footer p-3">
-                                    <p className="mb-0"><span className="text-success text-sm font-weight-bolder">+55% </span>than lask week</p>
-                                </div> */}
+                  
                 </div>
               </div>
               <div className="col-xl-3 col-sm-6 mb-xl-0 mb-4">
                 <div className="card">
                   <div className="card-header p-3 pt-2">
-                    {/* <div className="icon icon-lg icon-shape bg-gradient-dark shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                                        <i className="material-icons opacity-10">weekend</i>
-                                    </div> */}
+                    
                     <div className="text-left pt-1">
                       <p className="text-sm mb-0 text-capitalize">
-                        Negative Reviews
+                        Negative Comments
                       </p>
-                      <h4 className="mb-0">{tweetdata[0].value}</h4>
-                      {/* pull negative reviews data into this h4 */}
+                      <h4 className="mb-0">{sentimentBreakdown[0].value}</h4>
+                      {/* pull negative comments data into this h4 */}
                     </div>
                   </div>
                   <hr className="dark horizontal my-0" />
-                  {/* <div className="card-footer p-3">
-                                    <p className="mb-0"><span className="text-success text-sm font-weight-bolder">+55% </span>than lask week</p>
-                                </div> */}
+                  
                 </div>
               </div>
               <div className="col-xl-3 col-sm-6">
                 <div className="card">
                   <div className="card-header p-3 pt-2">
-                    {/* <div className="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                                        <i className="material-icons opacity-10">weekend</i>
-                                    </div> */}
+                    
                     <div className="text-left pt-1">
                       <p className="text-sm mb-0 text-capitalize">
-                        Neutral Reviews
+                        Neutral Comments
                       </p>
-                      <h4 className="mb-0">{tweetdata[1].value}</h4>
+                      <h4 className="mb-0">{sentimentBreakdown[1].value}</h4>
                     </div>
                   </div>
                   <hr className="dark horizontal my-0" />
-                  {/* <div className="card-footer p-3">
-                                    <p className="mb-0"><span className="text-success text-sm font-weight-bolder">+5% </span>than yesterday</p>
-                                </div> */}
+                  
                 </div>
               </div>
             </div>
             <br />
+            {sentimentBreakdown && (
+              <div className="row mb-4">
+                <div className="col-lg-8 col-md-6 mb-md-0 mb-4">
+                  <div className="card">
+                    <div className="card-header pb-0">
+                      <div className="row">
+                        <div className="col-lg-6 col-7">
+                          <h6>Sentiment Breakdown</h6>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="card-body px-0 pb-2">
+                      <div className="chart">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart
+                            data={sentimentBreakdown}
+                            margin={{
+                              top: 5,
+                              right: 30,
+                              left: 20,
+                              bottom: 5,
+                            }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value">
+                              {sentimentBreakdown.map((entry, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={COLORS[index % COLORS.length]}
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-lg-4 col-md-6">
+                  <div className="card h-100">
+                    <div className="card-header pb-0">
+                      <h6>Search History</h6>
+                    </div>
+                    <div className="card-body p-3">
+                      {searchedList.length === 0 ? (
+                        <p className="text-sm mb-0">
+                          No search history yet.
+                        </p>
+                      ) : (
+                        <>
+                          <h6 className="text-uppercase text-body text-xs font-weight-bolder">
+                            You searched for:
+                          </h6>
+                          <ul className="list-group">
+                            {searchedList.map((item, index) => {
+                              const label =
+                                typeof item === "string"
+                                  ? item
+                                  : item && typeof item === "object"
+                                  ? item.title || item.video_id
+                                  : "";
+                              const keyBase =
+                                item && typeof item === "object"
+                                  ? item.video_id || item.title || "item"
+                                  : label || "item";
+                              return (
+                                <li
+                                  key={`${keyBase}-${index}`}
+                                  className="list-group-item border-0 ps-0 pt-0 text-sm"
+                                >
+                                  <div className="text-dark">{label}</div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {hourdata && (
               <div className="row mb-4">
                 <div className="col-lg-8 col-md-6 mb-md-0 mb-4">
@@ -574,21 +668,14 @@ function Dashboard(props) {
                           <div className="dropdown float-lg-end">
                             <button
                               onClick={lineDownload}
-                              class="fas fa-download"
+                              className="fas fa-download"
                               style={{
                                 margin: "15px",
                                 border: "none",
                                 background: "transparent",
                               }}
                             ></button>
-                            {/* <button
-                              onClick={refresh}
-                              class="fas fa-sync"
-                              style={{
-                                border: "none",
-                                background: "transparent",
-                              }}
-                            ></button> */}
+                            
                           </div>
                         </div>
                       </div>
@@ -614,7 +701,7 @@ function Dashboard(props) {
                             <XAxis
                               dataKey="time"
                               label={{
-                                value: "No. of Tweets",
+                                value: "No. of Comments",
                                 position: "bottom",
                               }}
                               sclaeToFit="true"
@@ -627,7 +714,7 @@ function Dashboard(props) {
                             />
                             <YAxis
                               label={{
-                                value: "No. of Tweets",
+                                value: "No. of Comments",
                                 angle: -90,
                                 position: "insideLeft",
                               }}
@@ -685,21 +772,14 @@ function Dashboard(props) {
                           <div className="float-lg-end">
                             <button
                               onClick={pieDownload}
-                              class="fas fa-download"
+                              className="fas fa-download"
                               style={{
                                 margin: "15px",
                                 border: "none",
                                 background: "transparent",
                               }}
                             ></button>
-                            {/* <button
-                              onClick={refresh}
-                              class="fas fa-sync"
-                              style={{
-                                border: "none",
-                                background: "transparent",
-                              }}
-                            ></button> */}
+                            
                           </div>
                         </div>
                       </div>
@@ -707,12 +787,12 @@ function Dashboard(props) {
                     <div className="card-body p-3">
                       <div className="chart">
                         <ResponsiveContainer width="100%" height={250}>
-                          {tweetdata && (
+                          {sentimentBreakdown && (
                             <PieChart width={200} height={250} ref={pieRef}>
                               <Pie
                                 dataKey="value"
                                 isAnimationActive={false}
-                                data={tweetdata}
+                                data={sentimentBreakdown}
                                 outerRadius={80}
                                 labelLine={false}
                                 fill="#8884d8"
@@ -761,66 +841,268 @@ function Dashboard(props) {
                 </div>
               </div>
             )}
-            {/* <div className="row mb-4">
-                        <div className="col-lg-8 col-md-6 mb-md-0 mb-4">
-                            <div className="card">
-                                <div className="card-header pb-0">
-                                    <div className="row">
-                                        <div className="col-lg-6 col-7">
-                                            <h6>Country wise breakdown</h6>
-                                        </div>
-                                        <div className="col-lg-6 col-5 my-auto text-end">
-                                            <div className="dropdown float-lg-end pe-4">
-                                                <button onClick={download} class="fas fa-download" style={{ margin: '15px', border: 'none', background: 'transparent' }}></button>
-                                                <button onClick={refresh} class="fas fa-sync" style={{ border: 'none', background: 'transparent' }}></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="card-body px-0 pb-2">
-                                    <div className="chart" style={{ width: '100%', height: 300 }}>
-                                        <ResponsiveContainer>
-                                            <ScatterChart width={400}
-                                                height={400}
-                                                margin={{
-                                                    top: 20,
-                                                    right: 20,
-                                                    bottom: 20,
-                                                    left: 20,
-                                                    data: {country}
-                                                }}>
-                                                <CartesianGrid />
-                                                <XAxis type="number" dataKey="total" name="Number of reviews" />
-                                                <YAxis type="number" dataKey="z" name="Country"/>
-                                                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                                                <Scatter name="A school" data={data} fill="#8884d8">
-                                                </Scatter>
-                                            </ScatterChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="col-lg-4 col-md-6">
-                            <div className="card h-100">
-                                <div className="card-header pb-0">
-                                    <div className="row">
-                                        <div className="col-lg-6 col-7">
-                                            <h6>(something)</h6>
-                                        </div>
-                                        <div className="col-lg-6 col-5 my-auto text-end">
-                                            <div className="float-lg-end">
-                                                <button onClick={download} class="fas fa-download" style={{ margin: '15px', border: 'none', background: 'transparent' }}></button>
-                                                <button onClick={refresh} class="fas fa-sync" style={{ border: 'none', background: 'transparent' }}></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
+            {/* Top Comments Section */}
+            {topComments && topComments.length > 0 && (
+              <div className="row mb-4">
+                <div className="col-12">
+                  <div className="card">
+                    <div className="card-header pb-0">
+                      <h6>Most Influential Comments (By Likes)</h6>
+                      <p className="text-sm text-muted">These comments received the most engagement from viewers</p>
+                    </div>
+                    <div className="card-body">
+                      <div className="row">
+                        {/* Top Positive Comments */}
+                        <div className="col-md-6">
+                          <h6 className="text-success mb-3">
+                            <i className="fas fa-thumbs-up"></i> Top Positive Comments
+                          </h6>
+                          {topComments
+                            .filter((comment) => comment.sentiment === "Positive")
+                            .slice(0, 3)
+                            .map((comment, index) => (
+                              <div
+                                key={index}
+                                className="card mb-3"
+                                style={{
+                                  backgroundColor: "#f0f9f0",
+                                  border: "1px solid #d4edda",
+                                }}
+                              >
                                 <div className="card-body p-3">
+                                  <p className="mb-2" style={{ fontSize: "14px" }}>
+                                    "{comment.text}"
+                                  </p>
+                                  <div className="d-flex justify-content-between align-items-center">
+                                    <small className="text-muted">
+                                      <i className="fas fa-user"></i> {comment.author}
+                                    </small>
+                                    <span
+                                      className="badge"
+                                      style={{
+                                        backgroundColor: "#28a745",
+                                        color: "white",
+                                      }}
+                                    >
+                                      <i className="fas fa-heart"></i> {comment.likes} likes
+                                    </span>
+                                  </div>
                                 </div>
-                            </div>
+                              </div>
+                            ))}
+                          {topComments.filter((comment) => comment.sentiment === "Positive")
+                            .length === 0 && (
+                            <p className="text-muted">No highly-liked positive comments</p>
+                          )}
                         </div>
-                    </div> */}
+
+                        {/* Top Negative Comments */}
+                        <div className="col-md-6">
+                          <h6 className="text-danger mb-3">
+                            <i className="fas fa-thumbs-down"></i> Top Negative Comments
+                          </h6>
+                          {topComments
+                            .filter((comment) => comment.sentiment === "Negative")
+                            .slice(0, 3)
+                            .map((comment, index) => (
+                              <div
+                                key={index}
+                                className="card mb-3"
+                                style={{
+                                  backgroundColor: "#fff0f0",
+                                  border: "1px solid #f5c6cb",
+                                }}
+                              >
+                                <div className="card-body p-3">
+                                  <p className="mb-2" style={{ fontSize: "14px" }}>
+                                    "{comment.text}"
+                                  </p>
+                                  <div className="d-flex justify-content-between align-items-center">
+                                    <small className="text-muted">
+                                      <i className="fas fa-user"></i> {comment.author}
+                                    </small>
+                                    <span
+                                      className="badge"
+                                      style={{
+                                        backgroundColor: "#dc3545",
+                                        color: "white",
+                                      }}
+                                    >
+                                      <i className="fas fa-heart"></i> {comment.likes} likes
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          {topComments.filter((comment) => comment.sentiment === "Negative")
+                            .length === 0 && (
+                            <p className="text-muted">No highly-liked negative comments</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Word Clouds Section */}
+            {(topWordsPositive.length > 0 || topWordsNegative.length > 0) && (
+              <div className="row mb-4">
+                <div className="col-12">
+                  <div className="card">
+                    <div className="card-header pb-0">
+                      <h6>Most Frequent Words in Comments</h6>
+                      <p className="text-sm text-muted">
+                        Common words help identify key themes and topics in viewer feedback
+                      </p>
+                    </div>
+                    <div className="card-body">
+                      <div className="row">
+                        {/* Positive Words */}
+                        {topWordsPositive.length > 0 && (
+                          <div className="col-md-6">
+                            <h6 className="text-success mb-3">
+                              <i className="fas fa-smile"></i> Positive Comment Keywords
+                            </h6>
+                            <div
+                              style={{
+                                backgroundColor: "#f8fff8",
+                                padding: "20px",
+                                borderRadius: "8px",
+                                border: "1px solid #d4edda",
+                                minHeight: "200px",
+                              }}
+                            >
+                              {topWordsPositive.slice(0, 20).map((item, index) => {
+                                const fontSize = 12 + (item.count / topWordsPositive[0]?.count) * 20;
+                                return (
+                                  <span
+                                    key={index}
+                                    style={{
+                                      fontSize: `${fontSize}px`,
+                                      color: "#28a745",
+                                      fontWeight: "500",
+                                      margin: "5px",
+                                      display: "inline-block",
+                                      padding: "2px 6px",
+                                    }}
+                                    title={`${item.word}: ${item.count} mentions`}
+                                  >
+                                    {item.word}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Negative Words */}
+                        {topWordsNegative.length > 0 && (
+                          <div className="col-md-6">
+                            <h6 className="text-danger mb-3">
+                              <i className="fas fa-frown"></i> Negative Comment Keywords
+                            </h6>
+                            <div
+                              style={{
+                                backgroundColor: "#fff8f8",
+                                padding: "20px",
+                                borderRadius: "8px",
+                                border: "1px solid #f5c6cb",
+                                minHeight: "200px",
+                              }}
+                            >
+                              {topWordsNegative.slice(0, 20).map((item, index) => {
+                                const fontSize = 12 + (item.count / topWordsNegative[0]?.count) * 20;
+                                return (
+                                  <span
+                                    key={index}
+                                    style={{
+                                      fontSize: `${fontSize}px`,
+                                      color: "#dc3545",
+                                      fontWeight: "500",
+                                      margin: "5px",
+                                      display: "inline-block",
+                                      padding: "2px 6px",
+                                    }}
+                                    title={`${item.word}: ${item.count} mentions`}
+                                  >
+                                    {item.word}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Filter Statistics Section */}
+            {filterStats && (
+              <div className="row mb-4">
+                <div className="col-12">
+                  <div className="card">
+                    <div className="card-header pb-0">
+                      <h6>Data Quality & Filtering Statistics</h6>
+                      <p className="text-sm text-muted">
+                        Transparency in how comments were processed and filtered
+                      </p>
+                    </div>
+                    <div className="card-body">
+                      <div className="row">
+                        <div className="col-md-3">
+                          <div className="text-center p-3">
+                            <i
+                              className="fas fa-filter"
+                              style={{ fontSize: "24px", color: "#6c757d" }}
+                            ></i>
+                            <h4 className="mt-2">{filterStats.total || 0}</h4>
+                            <p className="text-sm text-muted mb-0">Total Filtered</p>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="text-center p-3">
+                            <i
+                              className="fas fa-shield-alt"
+                              style={{ fontSize: "24px", color: "#ffc107" }}
+                            ></i>
+                            <h4 className="mt-2">{filterStats.spam || 0}</h4>
+                            <p className="text-sm text-muted mb-0">Spam Removed</p>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="text-center p-3">
+                            <i
+                              className="fas fa-language"
+                              style={{ fontSize: "24px", color: "#17a2b8" }}
+                            ></i>
+                            <h4 className="mt-2">{filterStats.language || 0}</h4>
+                            <p className="text-sm text-muted mb-0">Non-English</p>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="text-center p-3">
+                            <i
+                              className="fas fa-text-height"
+                              style={{ fontSize: "24px", color: "#dc3545" }}
+                            ></i>
+                            <h4 className="mt-2">{filterStats.short || 0}</h4>
+                            <p className="text-sm text-muted mb-0">Too Short</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            
           </div>
         )}
       </main>

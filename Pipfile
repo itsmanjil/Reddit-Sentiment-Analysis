@@ -4,6 +4,24 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+django = "~=4.0"
+djangorestframework = "*"
+djangorestframework-simplejwt = "*"
+django-cors-headers = "*"
+psycopg2-binary = "*"
+python-dotenv = "*"
+nltk = "*"
+scikit-learn = "*"
+pandas = "*"
+google-api-python-client = "*"
+google-auth-httplib2 = "*"
+google-auth-oauthlib = "*"
+youtube-comment-downloader = "*"
+vaderSentiment = "*"
+emoji = "*"
+langdetect = "*"
+wordcloud = "*"
+matplotlib = "*"
 
 [dev-packages]
 

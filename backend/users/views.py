@@ -15,50 +15,31 @@ from django.contrib.auth.decorators import login_required
 # from users.authentication import expires_in
 
 from users.models import NewUser
-from app.models import TweetAnalysis
+from app.models import YouTubeAnalysis
 from .serializers import RegistrationSerializer
 # from .authentication import token_expire_handler, expires_in
 from .authentication import ExpiringTokenAuthentication
 
 import pytz
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-# @api_view(['POST',])
-# @permission_classes([AllowAny])
-# def registration_view(request):
-#     print('---', request)
 
-#     if request.method == 'POST':
-#         serializer = RegistrationSerializer(data=request.data)
-#         data = {}
-#         if serializer.is_valid(): 
-#             user = serializer.save()  #call the overwritten save method from serializers
-#             data['response'] = "Successfully registered new user."
-#             data['email'] = user.email
-#             data['user_name'] = user.user_name
-#             token = Token.objects.get(user=user).key
-#             data['token'] = token
-#         else:
-#             data = serializer.errors        
-#         return Response(data)
 
 from django.db import IntegrityError
 @api_view(["POST"])
 # @permission_classes([AllowAny])
 def registration_view(request):
-    print('---------')
     data = {}
     serializer = RegistrationSerializer(data=request.data)
-    print(serializers)
-    print(data)
+    logger.debug("registration_view serializer=%s data=%s", serializers, data)
     if serializer.is_valid():
-        print('yes')
         account = serializer.save()
         account.is_active = True
         account.save()
-        # token = Token.objects.get_or_create(user=account)[0].key
-        # data["message"] = "user registered successfully"
         data["email"] = account.email
         data["user_name"] = account.user_name
         # data["token"] = token
@@ -70,27 +51,22 @@ def registration_view(request):
 @api_view(["POST",])
 @permission_classes([AllowAny])
 def login_view(request):
-    print('------------------------req', request.data['email'])
     data = {}
     email = request.data['email']
     password = request.data['password']
 
-    print(email, password)
+    logger.debug("login_view email=%s", email)
 
     try:
         User = NewUser.objects.get(email=email)
-        print('user', User.password)
+        logger.debug("login_view user id=%s", User.id)
     except BaseException as e:
         raise serializers.ValidationError({"400":f'{str(e)}'})
     
     utc_now = datetime.datetime.utcnow()
     utc_now = utc_now.replace(tzinfo=pytz.utc)
 
-    # Token.objects.filter(user=User, created__lt = utc_now - datetime.timedelta(seconds=settings.TOKEN_EXPIRED_AFTER_SECONDS)).delete()
-    # token = Token.objects.get_or_create(user=User)[0].key
 
-    # token = Token.objects.get_or_create(user=User)[0].key
-    # is_expired, token = token_expire_handler(token)
 
     if not check_password(password, User.password):
         raise serializers.ValidationError({"error": "Incorrect login credentials"})
@@ -103,8 +79,6 @@ def login_view(request):
             data["id"] = User.id
             data["is_registered"] = User.is_registered
             res = {"data": data, 
-            # "token": token
-            # , "expires_in":expires_in(token)
             }
 
             return Response(res)
@@ -124,18 +98,19 @@ def logout_view(request):
 
 @api_view(["GET",])
 def get_user(request, id):
-    print('reqq', request.user, id)
     user = NewUser.objects.get(id=id)
-    print('user', user)
+    logger.debug("get_user request_user=%s target_user=%s", request.user, user)
 
-    tweetData = TweetAnalysis.objects.filter(user=user).order_by('-id')
+    youtubeData = YouTubeAnalysis.objects.filter(user=user).order_by('-id')
     searched_lists = []
-    for tweet in tweetData:
-        searched_lists.append(tweet.product_name)
+    for analysis in youtubeData:
+        searched_lists.append({
+            'video_id': analysis.video.video_id,
+            'title': analysis.video.title
+        })
 
     isSameUser = request.user == user
     if user.is_authenticated & isSameUser:
-        print('---userr----',user.id)
         if user.id == id:
             return Response({
             "user_name":user.user_name,
@@ -148,4 +123,3 @@ def get_user(request, id):
         return Response({
             "message":"You can only get your information"
         })
-
