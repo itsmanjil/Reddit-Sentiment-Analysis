@@ -1,56 +1,257 @@
 # YouTube Sentiment Analysis
 
-A Django-based sentiment analysis platform that analyzes YouTube video comments to surface audience sentiment and engagement insights.
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![Django](https://img.shields.io/badge/Django-4.0+-green.svg)
+![React](https://img.shields.io/badge/React-17-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-Note: This repository is named `Reddit-Sentiment-Analysis` for legacy reasons; the current project scope is YouTube comment analysis.
+A full-stack sentiment analysis platform that analyzes YouTube video comments to surface audience sentiment and engagement insights. Built with Django REST Framework and React.
+
+**Note:** This repository is named `Reddit-Sentiment-Analysis` for legacy reasons; the current project scope is YouTube comment analysis.
+
+## Overview
+
+This application provides comprehensive sentiment analysis of YouTube video comments, helping content creators, marketers, and researchers understand audience reactions and engagement patterns. The system fetches comments using either the official YouTube API or a fallback scraper, processes them through advanced NLP pipelines, and presents the results through an intuitive React dashboard.
+
+**Key Capabilities:**
+- Analyze up to 1000 comments per video
+- Support for 3 sentiment models (VADER, RoBERTa, TF-IDF)
+- Real-time spam and language filtering
+- Like-weighted sentiment analysis
+- Word frequency analysis for word clouds
+- JWT-authenticated user system
+- Analysis history and comparison
+
+## Demo
+
+### Sample Analysis Flow
+1. User enters a YouTube video URL
+2. System fetches comments via API or scraper
+3. Comments are preprocessed (spam filtering, language detection, emoji handling)
+4. Sentiment analysis is performed using selected model
+5. Results are displayed with:
+   - Sentiment distribution pie chart
+   - Like-weighted sentiment breakdown
+   - Top positive/negative words
+   - Filter statistics
+6. Analysis is saved to user's history
+
+### Example Output
+```json
+{
+  "sentiment_data": {
+    "Positive": 150,
+    "Negative": 30,
+    "Neutral": 20
+  },
+  "sentiment_ratio": {
+    "positive_percent": 75.0,
+    "negative_percent": 15.0,
+    "neutral_percent": 10.0
+  },
+  "total_analyzed": 200,
+  "model_used": "VADER"
+}
+```
+
+## Table of Contents
+- [Overview](#overview)
+- [Demo](#demo)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment Variables](#4-environment-variables)
+- [API Endpoints](#api-endpoints)
+- [Usage](#usage)
+- [Testing](#testing)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Sentiment Models](#sentiment-models)
+- [Use Cases](#use-cases)
+- [Authentication](#authentication)
+- [Security](#security)
+- [Performance](#performance)
+- [Database Models](#database-models)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+- [Credits](#credits)
+- [Support](#support)
+- [License](#license)
 
 ## Features
-- Dual data collection: YouTube Data API v3 or scraper (no API key needed)
-- VADER sentiment engine tuned for social media text
-- Spam detection, language filtering, and emoji handling
-- Like-weighted analysis to highlight influential comments
-- Word frequency outputs for positive and negative comments
-- Top comments by engagement
-- Analytics API with sentiment ratios and filtering stats
+
+### Data Collection
+- **Dual fetching modes**: YouTube Data API v3 (fast, reliable) or scraper (unlimited, no API key)
+- **Video metadata**: title, channel, views, likes, comment count
+- **Comment data**: text, author, likes, timestamps, reply status
+
+### Sentiment Analysis
+- **VADER**: Fast, optimized for social media (recommended)
+- **RoBERTa**: High accuracy transformer model
+- **TF-IDF**: Legacy ML baseline
+- **Confidence scores**: Compound sentiment scores for each comment
+
+### Preprocessing
+- **Spam detection**: Filter promotional and bot comments
+- **Language filtering**: English-only option
+- **Emoji handling**: Remove, convert to text, or keep
+- **Text normalization**: Contractions, negations, stopwords, elongated words
+
+### Analytics
+- **Sentiment ratios**: Positive/Negative/Neutral percentages
+- **Like-weighted analysis**: Highlight influential comments by likes
+- **Word clouds**: Top 50 positive and negative words
+- **Top comments**: Most engaging comments by likes
+- **Filter statistics**: Track spam, language, and short comment filtering
+
+### Frontend
+- **React dashboard**: Material design UI
+- **User authentication**: JWT-based login/register
+- **Data visualization**: Charts with Recharts
+- **PDF export**: Analysis reports
+- **Analysis history**: View past analyses
+
+## Project Structure
+
+```
+Reddit-Sentiment-Analysis/
+├── backend/                    # Django REST API
+│   ├── app/                   # Main YouTube analysis app
+│   │   ├── models.py         # YouTubeVideo, YouTubeComment, YouTubeAnalysis
+│   │   ├── views.py          # API endpoints
+│   │   ├── youtube_fetcher.py    # YouTube API client
+│   │   ├── youtube_scraper.py    # Alternative scraper
+│   │   ├── youtube_preprocessor.py  # Text cleaning & filtering
+│   │   └── sentiment_engines.py     # VADER, RoBERTa, TF-IDF
+│   ├── app_api/              # Authentication API
+│   ├── users/                # User management
+│   ├── core/                 # Django settings & config
+│   ├── files/                # Data files (contractions, negations)
+│   ├── model/                # TF-IDF model files
+│   ├── test_youtube.py       # Integration tests
+│   ├── manage.py
+│   └── Pipfile               # Python dependencies
+├── frontend/                  # React application
+│   ├── src/
+│   │   ├── Views/            # Pages (Dashboard, Search, Report, etc.)
+│   │   ├── Components/       # Reusable components
+│   │   ├── context/          # Auth context
+│   │   ├── axios.js          # API client
+│   │   └── App.js
+│   └── package.json
+└── README.md
+```
 
 ## Quick Start
 
 ### Prerequisites
+
+**Backend:**
 - Python 3.8+
-- Django 4.0+
-- PostgreSQL or SQLite
+- pip or pipenv
+- PostgreSQL or SQLite (SQLite by default)
+
+**Frontend:**
+- Node.js 14+
+- npm or yarn
 
 ### Installation
+
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/<your-username>/Reddit-Sentiment-Analysis.git
 cd Reddit-Sentiment-Analysis
+```
 
-# Backend dependencies
+#### 2. Backend Setup
+```bash
+cd backend
+
+# Option A: Using pipenv (recommended)
 pipenv install
 pipenv shell
 
-cd backend
-cp .env.example .env
-# Edit .env and set SECRET_KEY and YOUTUBE_API_KEY (optional)
+# Option B: Using pip and venv
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt  # If requirements.txt exists
+# OR install from Pipfile: pip install django djangorestframework django-cors-headers ...
 
+# Create .env file
+cp .env.example .env
+# Edit .env and set:
+#   - SECRET_KEY (Django secret key)
+#   - YOUTUBE_API_KEY (optional - get from Google Cloud Console)
+
+# Download NLTK data
+python -c "import nltk; nltk.download('stopwords'); nltk.download('wordnet'); nltk.download('punkt')"
+
+# Run migrations
 python manage.py migrate
+
+# Create superuser (admin account)
 python manage.py createsuperuser
+
+# Run tests (optional)
+python test_youtube.py
+
+# Start development server
 python manage.py runserver
 ```
 
-### Frontend
-See `frontend/README.md` for local dev and build steps.
+Backend will run on http://localhost:8000
 
-### Get a YouTube API Key (Optional)
+#### 3. Frontend Setup
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+```
+
+Frontend will run on http://localhost:3000
+
+### 4. Environment Variables
+
+Create a `.env` file in the `backend/` directory:
+
+```env
+# Django Configuration
+SECRET_KEY=your-secret-key-here-generate-a-random-string
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database (SQLite by default, uncomment for PostgreSQL)
+# DATABASE_URL=postgresql://user:password@localhost:5432/youtube_sentiment
+
+# YouTube API (Optional - scraper works without it)
+YOUTUBE_API_KEY=your-youtube-api-key-here
+
+# CORS (for frontend)
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+**Generate a Secret Key:**
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+### 5. Get a YouTube API Key (Optional)
 The scraper works without an API key, but the official API is faster and more reliable:
 
 1. Go to https://console.cloud.google.com/
 2. Create a new project
 3. Enable "YouTube Data API v3"
-4. Create credentials -> API Key
-5. Add it to `.env` as `YOUTUBE_API_KEY`
+4. Create credentials → API Key
+5. Copy the key to your `.env` file as `YOUTUBE_API_KEY`
 
-Free tier: 10,000 units/day (about 100 video analyses)
+**Free tier:** 10,000 units/day (approximately 100 video analyses)
 
 ## Usage
 
@@ -124,11 +325,20 @@ All tests passed
 
 ## API Endpoints
 
+### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/youtube/analyze/` | Analyze YouTube video comments |
-| GET | `/api/youtube/analysis/<video_id>/` | Get saved analysis for a video |
-| GET | `/api/youtube/analyses/` | Get all user's analyses |
+| POST | `/api/users/register/` | Register new user |
+| POST | `/api/token/` | Login and get JWT tokens |
+| POST | `/api/token/refresh/` | Refresh access token |
+
+### YouTube Analysis
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/youtube/analyze/` | Analyze YouTube video comments | Yes |
+| GET | `/api/youtube/analysis/<video_id>/` | Get saved analysis for a video | Yes |
+| GET | `/api/youtube/analyses/` | Get all user's analyses (last 20) | Yes |
+| GET | `/api/youtube/test/` | Health check endpoint | No |
 
 ### Request Parameters
 
@@ -172,18 +382,39 @@ YouTube Video URL
 ## Technology Stack
 
 ### Backend
-- Django 4.0.2
-- Django REST Framework
-- PostgreSQL or SQLite
-- NLTK
-- scikit-learn
+- **Django 4.0+**: Web framework
+- **Django REST Framework**: RESTful API
+- **djangorestframework-simplejwt**: JWT authentication
+- **PostgreSQL / SQLite**: Database (SQLite default)
+- **python-dotenv**: Environment variables
 
-### YouTube Integration
-- google-api-python-client (official YouTube API)
-- youtube-comment-downloader (scraper)
-- VADER Sentiment
-- emoji
-- langdetect
+### YouTube & Data Collection
+- **google-api-python-client**: Official YouTube Data API v3
+- **youtube-comment-downloader**: Fallback scraper
+- **googleapiclient**: API error handling
+
+### NLP & Sentiment Analysis
+- **vaderSentiment**: Social media sentiment (default)
+- **transformers**: Hugging Face models (RoBERTa)
+- **torch**: PyTorch for transformers
+- **scikit-learn 0.24.2**: TF-IDF classifier
+- **NLTK**: Tokenization, stopwords, wordnet
+- **pandas**: Data processing
+
+### Text Processing
+- **emoji**: Emoji detection and conversion
+- **langdetect**: Language identification
+- **wordcloud**: Word frequency visualization
+- **matplotlib**: Plotting
+
+### Frontend
+- **React 17**: UI framework
+- **React Router**: Navigation
+- **Axios**: HTTP client
+- **jwt-decode**: JWT token handling
+- **Recharts**: Data visualization
+- **Bootstrap 5**: Styling
+- **Material Dashboard**: UI theme
 
 ## Sentiment Models
 
@@ -230,12 +461,61 @@ Help educators improve courses:
 - Track student satisfaction
 - Common questions from comments
 
+## Authentication
+
+The application uses JWT (JSON Web Tokens) for authentication:
+
+### User Registration
+```bash
+POST /api/users/register/
+{
+  "user_name": "username",
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+
+### User Login
+```bash
+POST /api/token/
+{
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+
+Returns:
+```json
+{
+  "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+}
+```
+
+### Using the Token
+Include the access token in all API requests:
+```bash
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
+```
+
+### Token Refresh
+```bash
+POST /api/token/refresh/
+{
+  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+}
+```
+
+The frontend automatically manages tokens using React Context and stores them in localStorage.
+
 ## Security
-- API keys stored in `.env` (never commit real keys)
-- Django security middleware enabled
-- SQL injection protection via ORM
-- Input validation on all endpoints
-- CORS configuration for frontend
+- **API keys**: Stored in `.env` (never commit real keys)
+- **JWT authentication**: Secure token-based auth
+- **Django security middleware**: CSRF, XSS protection
+- **SQL injection protection**: Django ORM
+- **Input validation**: All endpoints validate input
+- **CORS configuration**: Configured for frontend
+- **Password hashing**: Django's built-in password hasher
 
 ## Performance
 
@@ -258,21 +538,52 @@ Help educators improve courses:
 - GPU: not required
 
 ## Contributing
-Contributions welcome. Please:
+
+Contributions are welcome! Here's how you can help:
+
+### Getting Started
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a pull request
+2. Clone your fork: `git clone https://github.com/<your-username>/Reddit-Sentiment-Analysis.git`
+3. Create a feature branch: `git checkout -b feature/AmazingFeature`
+4. Make your changes
+5. Run tests: `python test_youtube.py`
+6. Commit your changes: `git commit -m 'Add AmazingFeature'`
+7. Push to the branch: `git push origin feature/AmazingFeature`
+8. Open a Pull Request
+
+### Development Guidelines
+- Follow PEP 8 style guide for Python code
+- Use ESLint for JavaScript/React code
+- Write tests for new features
+- Update documentation as needed
+- Keep commits atomic and well-described
+
+### Areas for Contribution
+- Add new sentiment models
+- Improve preprocessing algorithms
+- Enhance frontend UI/UX
+- Add visualization features
+- Write comprehensive tests
+- Improve documentation
+- Fix bugs and issues
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Credits
-- VADER Sentiment: https://github.com/cjhutto/vaderSentiment
-- YouTube Data API: https://developers.google.com/youtube/v3
-- emoji: https://github.com/carpedm20/emoji
-- langdetect: https://github.com/Mimino666/langdetect
+
+### Libraries & Tools
+- [VADER Sentiment](https://github.com/cjhutto/vaderSentiment) - Social media sentiment analysis
+- [YouTube Data API v3](https://developers.google.com/youtube/v3) - Official YouTube API
+- [youtube-comment-downloader](https://github.com/egbertbouman/youtube-comment-downloader) - Alternative scraper
+- [Hugging Face Transformers](https://huggingface.co/transformers/) - RoBERTa model
+- [Django](https://www.djangoproject.com/) - Web framework
+- [React](https://reactjs.org/) - Frontend framework
+- [Material Dashboard](https://www.creative-tim.com/product/material-dashboard-react) - UI theme
+- [emoji](https://github.com/carpedm20/emoji) - Emoji processing
+- [langdetect](https://github.com/Mimino666/langdetect) - Language detection
+- [NLTK](https://www.nltk.org/) - Natural language toolkit
+- [Recharts](https://recharts.org/) - React charting library
 
 ## Support
 - Run `python test_youtube.py` for diagnostics
@@ -283,6 +594,9 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - [x] VADER sentiment engine
 - [x] Spam detection and language filtering
 - [x] Like-weighted sentiment
+- [x] React dashboard with Material Design
+- [x] JWT authentication
+- [x] User analysis history
 - [ ] Word cloud visualization endpoint
 - [ ] Video transcript analysis
 - [ ] Multi-language support
@@ -290,7 +604,94 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - [ ] Export to CSV/Excel
 - [ ] Channel-level analytics
 - [ ] Sentiment timeline visualization
+- [ ] Comment thread analysis
 
-Built with Django and VADER Sentiment.
+## Database Models
 
-Pure YouTube sentiment analysis; no Reddit or Twitter ingestion.
+### YouTubeVideo
+Stores video metadata fetched from YouTube:
+- `video_id` (PK): 11-character YouTube video ID
+- `title`, `description`: Video content
+- `channel_name`, `channel_id`: Creator info
+- `published_at`: Upload timestamp
+- `view_count`, `like_count`, `comment_count`: Engagement metrics
+- `thumbnail_url`: Video thumbnail
+
+### YouTubeComment
+Stores individual comments with sentiment analysis:
+- `video` (FK): Reference to YouTubeVideo
+- `comment_id`: YouTube comment ID
+- `text`, `author`: Comment content
+- `likes`, `published_at`: Engagement data
+- `is_reply`: Thread structure
+- `sentiment`: Positive/Negative/Neutral
+- `sentiment_score`: Compound score (-1 to +1)
+- `is_spam`, `language`: Filter metadata
+
+### YouTubeAnalysis
+Stores complete sentiment analysis results:
+- `user` (FK): User who requested analysis
+- `video` (FK): Analyzed video
+- `sentiment_data`: Sentiment counts (JSON)
+- `like_weighted_sentiment`: Top liked comments (JSON)
+- `top_words_positive`, `top_words_negative`: Word frequencies (JSON)
+- `total_comments_analyzed`: Analysis scope
+- `filtered_spam_count`, `filtered_language_count`: Filter stats
+- `analysis_model`: VADER/RoBERTa/TF-IDF
+- `fetched_date`: Analysis timestamp
+
+## Troubleshooting
+
+### NLTK Data Not Found
+```bash
+python -c "import nltk; nltk.download('stopwords'); nltk.download('wordnet'); nltk.download('punkt')"
+```
+
+### YouTube API Quota Exceeded
+Switch to scraper mode:
+```json
+{
+  "video_url": "...",
+  "use_api": false
+}
+```
+
+### Scraper Not Working
+The scraper may be blocked by YouTube. Try:
+1. Use a different video
+2. Wait a few minutes and retry
+3. Use the official API with a key
+
+### RoBERTa Model Loading Slowly
+RoBERTa downloads ~500MB on first use. Subsequent uses are faster. Consider using VADER for faster analysis.
+
+### Import Errors
+Ensure all dependencies are installed:
+```bash
+cd backend
+pipenv install  # or pip install -r requirements.txt
+```
+
+### CORS Errors
+Check `backend/core/settings.py` and ensure:
+```python
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+```
+
+### Database Migration Issues
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### Frontend Not Connecting to Backend
+Check that:
+1. Backend is running on http://localhost:8000
+2. Frontend `axios.js` points to correct API URL
+3. CORS is configured correctly
+
+Built with Django REST Framework, React, and VADER Sentiment.
+
+**Pure YouTube sentiment analysis** - no Reddit or Twitter ingestion.
